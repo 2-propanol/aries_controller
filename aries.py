@@ -14,8 +14,8 @@
 """
 
 import sys
-import subprocess
-import time
+import telnetlib
+# import time
 
 
 def main():
@@ -26,14 +26,15 @@ def main():
     print("第2引数：" + args[2])
     print("第3引数：" + args[3])
 
-    commandlist = ["telnet"] + ["192.168.1.20"]
-    p = subprocess.Popen(commandlist,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    # Adding this for sync to avoid any overlap
-    time.sleep(1)
-    p.communicate("RPS1/1/9000/1\n")
+    HOST = "192.168.1.20"
+    PORT = "12321"
+
+    tn = telnetlib.Telnet(HOST, PORT)
+
+    # tn.write(b"RPS1/2/9000/1\r\n")
+    tn.write(b"ORG1/3/1\r\n")
+
+    print(tn.read_all().decode('ascii'))
 
     return 0
 
