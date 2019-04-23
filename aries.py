@@ -14,30 +14,64 @@
 """
 
 import sys
-import telnetlib
+from telnetlib import Telnet
 # import time
 
 
+class Aries:
+    """
+    ARIES 3軸ステージを制御するクラス
+
+    Attributes
+    ----------
+    `host` : str
+        ARIESのIPアドレス。デフォルトは "192.168.1.20"。
+    `port` : int
+        ARIESの接続に使うポート番号。デフォルトは 12321。
+    """
+
+    def __init__(self, host="192.168.1.20", port=12321):
+        """
+        コンストラクタ。telnetへ接続開始。
+        """
+
+        self.tn = Telnet(host, port)
+
+    def __del__(self):
+        """
+        デストラクタ。telnetから切断。
+
+        telnetプロセスがpython終了後も残るのを防ぐため。
+        明示的に呼び出す必要はない。
+        """
+
+        self.tn.close()
+
+
 def main():
-    args = sys.argv
+    print("tn opening")
 
-    print(args)
-    print("第1引数：" + args[1])
-    print("第2引数：" + args[2])
-    print("第3引数：" + args[3])
+    aries = Aries()
 
-    HOST = "192.168.1.20"
-    PORT = "12321"
-
-    tn = telnetlib.Telnet(HOST, PORT)
+    print("tn opened")
 
     # tn.write(b"RPS1/2/9000/1\r\n")
-    tn.write(b"ORG1/3/1\r\n")
+    # tn.write(b"ORG3/3/1\r\n")
 
-    print(tn.read_all().decode('ascii'))
+    print("tn wrote")
 
+    # print(tn.read_all().decode('ascii'))
+
+    print("tn closing")
+    del aries
+    print("tn closed")
     return 0
 
 
 if __name__ == '__main__':
+    args = sys.argv
+
+    print(args)
+    print("第1引数：" + args[1])
+
     main()
