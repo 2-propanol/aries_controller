@@ -21,28 +21,21 @@ from telnetlib import Telnet
 
 
 class Aries:
-    """
-    ARIES 3軸ステージを制御するクラス
+    """ARIES 3軸ステージを制御するクラス
 
-    Parameters
-    ----------
-    is_connected : bool
-        telnetが生きていればTrue、死んでいればFalseを返す。
+    Params:
+        is_connected (bool): telnetが生きていればTrue、死んでいればFalseを返す。
 
-    Attributes
-    ----------
-    `host` : str
-        ARIESのIPアドレス。デフォルトは "192.168.1.20"。
-    `port` : int
-        ARIESの接続に使うポート番号。デフォルトは 12321。
+    Attributes:
+        host (str): ARIESのIPアドレス。デフォルトは "192.168.1.20"。
+        port (int): ARIESの接続に使うポート番号。デフォルトは 12321。
     """
 
     _EOL = b"\r\n"
     is_connected = False
 
     def __init__(self, host="192.168.1.20", port=12321):
-        """
-        コンストラクタ。telnetへ接続開始。
+        """コンストラクタ。telnetへ接続開始。
 
         10秒経って接続されなかったらタイムアウトする。
         接続されるか10秒経つまで待機する。
@@ -59,8 +52,7 @@ class Aries:
             self.is_connected = True
 
     def __del__(self):
-        """
-        デストラクタ。telnetから切断。
+        """デストラクタ。telnetから切断。
 
         telnetプロセスがpython終了後も残るのを防ぐため。
         `del aries`のように明示的に呼び出す必要はない。
@@ -74,21 +66,16 @@ class Aries:
             pass
 
     def raw_command(self, cmd, timeout=300):
-        """
-        "RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
+        """"RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
+
         返答があるまで待機する。
 
-        Parameters
-        ----------
-        cmd : str
-            対象の果物のマスタID。
-        timeout : int
-            返答を待機する最大秒数。デフォルトは300秒。
+        Args:
+            cmd (str): 対象の果物のマスタID。
+            timeout (int): 返答を待機する最大秒数。デフォルトは300秒。
 
-        Returns
-        -------
-        stdout : str
-            コマンド実行結果。
+        Returns:
+            str: 生のコマンド実行結果。
         """
 
         self.tn.write(cmd.encode())
