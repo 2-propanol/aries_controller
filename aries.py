@@ -4,18 +4,20 @@
 """
     ARIES 3軸ステージをPythonで制御する
 
-    Usage: python3 aries.py <ARIESのIPアドレス> <operation> <args>...
+    Usage: python3 aries.py --host <HOST> --port <PROT> <operation>
 
-    <ARIESのIPアドレス>
-        defaultでは 192.168.1.20が使用される
+    <HOST>
+        ARIESのIPアドレス。省略すると 192.168.1.20 が使用される
+
+    <PORT>
+        ARIESのポート番号。省略すると 12321 が使用される
 
     <operation>
-
+        ARIESに送信するコマンド。RPS1/4/90000/1 など。
 """
 
 import argparse
 from telnetlib import Telnet
-# import time
 
 
 class Aries:
@@ -43,7 +45,7 @@ class Aries:
         コンストラクタ。telnetへ接続開始。
 
         10秒経って接続されなかったらタイムアウトする。
-        同期処理のため、接続されるか10秒経つまで待機する。
+        接続されるか10秒経つまで待機する。
         """
 
         try:
@@ -74,7 +76,7 @@ class Aries:
     def raw_command(self, cmd, timeout=300):
         """
         "RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
-        同期処理のため返答があるまで待機する。
+        返答があるまで待機する。
 
         Parameters
         ----------
@@ -87,9 +89,6 @@ class Aries:
         -------
         stdout : str
             コマンド実行結果。
-
-        `WAP`(アプリケーション接続数設定 書換), `TRS`(トリガ信号出力選択)などの
-        このクラスで実装されていないコマンドも実行可能。
         """
 
         self.tn.write(cmd.encode())
@@ -100,6 +99,11 @@ class Aries:
 
 
 def main():
+    """
+    コマンドラインツールとして使用するときに呼び出される
+    Pythonモジュールとして使用する場合は呼び出さないこと
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str,
                         help="transfering command to ARIES")
@@ -114,19 +118,23 @@ def main():
     if args.port is None:
         args.port = 12321
 
-    # aries = Aries("192.168.1.20", 12321)
+    # ARIESへの接続を試みる
+    print(f"Trying {args.host}:{args.port}.")
     aries = Aries(host=args.host, port=args.port)
 
     # 接続されているかを is_connected で調べる
     if aries.is_connected:
-        print("connected")
+        print(f"connected to {args.host}:{args.port}.")
     else:
-        print("connection failed")
+        print("connection failed.")
         return 1
 
+    # コマンドの実行と結果の表示
     result = aries.raw_command(args.command)
     print(result)
 
+    del aries  # 明示的な切断要求(デストラクタがあるので書かなくても良い)
+    print("connection closed.")
     return 0
 
 
