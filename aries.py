@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*
 
 """
@@ -13,7 +13,7 @@
 
 """
 
-import sys
+import argparse
 from telnetlib import Telnet
 # import time
 
@@ -71,7 +71,7 @@ class Aries:
             # そもそもtelnetに接続されなかったときの例外
             pass
 
-    def raw_command(self, cmd):
+    def raw_command(self, cmd, timeout=300):
         """
         "RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
         同期処理のため返答があるまで待機する。
@@ -80,6 +80,8 @@ class Aries:
         ----------
         cmd : str
             対象の果物のマスタID。
+        timeout : int
+            返答を待機する最大秒数。デフォルトは300秒。
 
         Returns
         -------
@@ -90,34 +92,43 @@ class Aries:
         このクラスで実装されていないコマンドも実行可能。
         """
 
-        # self.tn.write(bytes(cmd))
-        # self.tn.write(cmd.encode)
-        # self.tn.write(b"RPS3/2/9000/0\r\n")
-        self.tn.write(cmd)
-        # self.tn.write(self._EOL)
+        self.tn.write(cmd.encode())
+        self.tn.write(self._EOL)
+
+        # 改行されるまで待機して、得られた内容を返す
+        return self.tn.read_until(b"\r\n", timeout).decode()
 
 
 def main():
-    # aries = Aries("192.168.1.20", 12321)
-    aries = Aries()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", type=str,
+                        help="transfering command to ARIES")
+    parser.add_argument("--host", type=str,
+                        help="ARIES's IP address. default is 192.168.1.20")
+    parser.add_argument("--port", type=int,
+                        help="ARIES's port. default is 12321")
 
+    args = parser.parse_args()
+    if args.host is None:
+        args.host = "192.168.1.20"
+    if args.port is None:
+        args.port = 12321
+
+    # aries = Aries("192.168.1.20", 12321)
+    aries = Aries(host=args.host, port=args.port)
+
+    # 接続されているかを is_connected で調べる
     if aries.is_connected:
-        print("tn opened")
+        print("connected")
     else:
+        print("connection failed")
         return 1
 
-    aries.raw_command(b"RPS2/2/9000/1\r\n")
-    # tn.write(b"ORG3/3/1\r\n")
-
-    # print(tn.read_all().decode('ascii'))
+    result = aries.raw_command(args.command)
+    print(result)
 
     return 0
 
 
 if __name__ == '__main__':
-    args = sys.argv
-
-    print(args)
-    print("第1引数：" + args[1])
-
     main()
