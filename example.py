@@ -20,15 +20,9 @@ def main():
         print("connection failed.")
         return 1
 
-    # コマンドの実行と結果の表示
-    result1 = aries.raw_command("ORG1/3/1")
-    result2 = aries.raw_command("ORG2/3/1")
-    result3 = aries.raw_command("ORG3/3/1")
-    print(result1)
-    print(result2)
-    print(result3)
+    # コマンドの実行など
+    aries.reset_position()
 
-    print("connection closed.")
     return 0
 
 

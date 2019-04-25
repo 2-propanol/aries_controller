@@ -31,7 +31,6 @@ class Aries:
         port (int): ARIESの接続に使うポート番号。デフォルトは 12321。
     """
 
-    _EOL = b"\r\n"
     is_connected = False
 
     def __init__(self, host="192.168.1.20", port=12321):
@@ -79,10 +78,41 @@ class Aries:
         """
 
         self.tn.write(cmd.encode())
-        self.tn.write(self._EOL)
+        self.tn.write(b"\r\n")
 
         # 改行されるまで待機して、得られた内容を返す
         return self.tn.read_until(b"\r\n", timeout).decode()
+
+    def reset_position(self, speed=4):
+        """原点近接センサ・エッジを用いてステージを厳密に原点へ復帰させる。
+
+        電源投入直後や長時間駆動させた後に実行することで、
+        ステージ位置の信頼性を向上できる。
+
+        Args:
+            speed (str): 復帰速度(1〜9)。デフォルトは4。
+
+        Returns:
+            int: 成否。
+        """
+
+        self.raw_command(f"ORG1/{speed}/1")
+        self.raw_command(f"ORG2/{speed}/1")
+        self.raw_command(f"ORG3/{speed}/1")
+        return 0
+
+    def get_position(self):
+        """ステージの現在位置を取得する。
+
+        listで返ってきます。numpy配列でないことに注意
+
+        Returns:
+            [int, int, int]: 1軸, 2軸, 3軸の現在位置。
+        """
+
+        return [int(self.raw_command("RDP1").split()[2]),
+                int(self.raw_command("RDP1").split()[2]),
+                int(self.raw_command("RDP1").split()[2])]
 
 
 def main():
