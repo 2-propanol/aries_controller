@@ -16,6 +16,7 @@
         ARIESに送信するコマンド。RPS1/4/90000/1 など。
 """
 
+import time
 import argparse
 from telnetlib import Telnet
 
@@ -25,6 +26,10 @@ class Aries:
 
     Params:
         is_connected (bool): telnetが生きていればTrue、死んでいればFalseを返す。
+        speed (int): 移動速度(1〜9)。int以外が代入された場合、型変換を試みる。
+        x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
+        y (int): ARIESの2軸パルス値と連動。0 〜 +90,000。
+        z (int): ARIESの3軸パルス値と連動。180,000で一周。-360,000 〜 +360,000。
 
     Attributes:
         host (str): ARIESのIPアドレス。デフォルトは "192.168.1.20"。
@@ -32,6 +37,7 @@ class Aries:
     """
 
     is_connected = False
+    _speed = 4
 
     def __init__(self, host="192.168.1.20", port=12321):
         """コンストラクタ。telnetへ接続開始。
@@ -46,7 +52,7 @@ class Aries:
             # ホストが見つからなかったときやタイムアウトが起こったときを想定
             # 他のエラーも握り潰しているためリファクタリングの余地あり
             # （ConnectionRefusedError は観測済み）
-            print(">>> ", err)
+            print("ARIES: error: ", err)
         else:
             self.is_connected = True
 
@@ -83,7 +89,7 @@ class Aries:
         # 改行されるまで待機して、得られた内容を返す
         return self.tn.read_until(b"\r\n", timeout).decode()
 
-    def reset_position(self, speed=4):
+    def reset(self):
         """原点近接センサ・エッジを用いてステージを厳密に原点へ復帰させる。
 
         電源投入直後や長時間駆動させた後に実行することで、
@@ -96,23 +102,104 @@ class Aries:
             int: 成否。
         """
 
-        self.raw_command(f"ORG1/{speed}/1")
-        self.raw_command(f"ORG2/{speed}/1")
-        self.raw_command(f"ORG3/{speed}/1")
+        self.raw_command(f"ORG1/{self._speed}/1")
+        self.raw_command(f"ORG2/{self._speed}/1")
+        self.raw_command(f"ORG3/{self._speed}/1")
         return 0
 
-    def get_position(self):
-        """ステージの現在位置を取得する。
+    def _clip(self, orig, min, max, str=""):
+        """origをintに変換し、minとmax内に収める。
 
-        listで返ってきます。numpy配列でないことに注意
+        プライベートメソッド。
+        変換できなかった場合は例外を発生させる。
+
+        Args:
+            orig (any): clip対象の値。
+            min (int): 最小値。
+            max (int): 最大値。
+            str (str): エラーメッセージに使う文字列。
 
         Returns:
-            [int, int, int]: 1軸, 2軸, 3軸の現在位置。
+            int: 変換済みの値。
         """
+        try:
+            orig = int(orig)
+        except ValueError:
+            raise ValueError(f"ARIES: error: '{orig}' is not int. in {str}")
+        else:
+            if orig > max:
+                print(f"ARIES: warn: {str} is limited to {max}.")
+                return max
+            elif orig < min:
+                print(f"ARIES: warn: {str} is limited to {min}.")
+                return min
+            else:
+                return orig
 
-        return [int(self.raw_command("RDP1").split()[2]),
-                int(self.raw_command("RDP1").split()[2]),
-                int(self.raw_command("RDP1").split()[2])]
+    def wait_until_stop(self):
+        while not self.is_stopped:
+            time.sleep(0.5)
+
+    x = property(doc="1軸の現在位置(角度)")
+    @x.getter
+    def x(self):
+        return int(self.raw_command("RDP1").split()[2])
+
+    @x.setter
+    def x(self, x):
+        self.raw_command(
+            f"APS1/{self._speed}/{self._clip(x, -45000, 45000, 'x')}/1")
+        time.sleep(0.1)
+
+    y = property(doc="2軸の現在位置(角度)")
+    @y.getter
+    def y(self):
+        return int(self.raw_command("RDP2").split()[2])
+
+    @y.setter
+    def y(self, y):
+        self.raw_command(
+            f"APS2/{self._speed}/{self._clip(y, 0, 90000, 'y')}/1")
+        time.sleep(0.1)
+
+    z = property(doc="3軸の現在位置(角度)")
+    @z.getter
+    def z(self):
+        return int(self.raw_command("RDP3").split()[2])
+
+    @z.setter
+    def z(self, z):
+        self.raw_command(
+            f"APS3/{self._speed}/{self._clip(z, -360000, 360000, 'z')}/1")
+        time.sleep(0.1)
+
+    speed = property(doc="移動速度")
+    @speed.getter
+    def speed(self):
+        return self._speed
+
+    @speed.setter
+    def speed(self, speed):
+        self._speed = self._clip(speed, 0, 9, "speed")
+
+    is_stopped = property(doc="停止状態かどうか")
+    @is_stopped.getter
+    def is_stopped(self):
+        # 3軸全てが停止状態であれば True
+        return self.raw_command("STR1").split()[2] == "0" \
+            and self.raw_command("STR2").split()[2] == "0" \
+            and self.raw_command("STR3").split()[2] == "0"
+
+    @is_stopped.setter
+    def is_stopped(self, _is_stopped):
+        if _is_stopped:
+            # 3軸全てを緊急停止させる
+            self.raw_command("STP1/0")
+            self.raw_command("STP2/0")
+            self.raw_command("STP3/0")
+        else:
+            # 非常停止信号のソフトウェアロックを解除する
+            self.raw_command("REM")
 
 
 def main():
