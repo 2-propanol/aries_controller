@@ -19,6 +19,7 @@
 import time
 import argparse
 from telnetlib import Telnet
+from socket import timeout as socket_timeout
 
 
 class Aries:
@@ -39,19 +40,15 @@ class Aries:
     is_connected = False
     _speed = 4
 
-    def __init__(self, host="192.168.1.20", port=12321):
+    def __init__(self, host="192.168.1.20", port=12321, timeout=10):
         """コンストラクタ。telnetへ接続開始。
 
-        10秒経って接続されなかったらタイムアウトする。
-        接続されるか10秒経つまで待機する。
+        接続されるかタイムアウトするまで待機する。
         """
 
         try:
-            self.tn = Telnet(host, port, 10)
-        except Exception as err:
-            # ホストが見つからなかったときやタイムアウトが起こったときを想定
-            # 他のエラーも握り潰しているためリファクタリングの余地あり
-            # （ConnectionRefusedError は観測済み）
+            self.tn = Telnet(host, port, timeout)
+        except (ConnectionRefusedError, socket_timeout) as err:
             print("ARIES: error: ", err)
         else:
             self.is_connected = True
@@ -94,18 +91,11 @@ class Aries:
 
         電源投入直後や長時間駆動させた後に実行することで、
         ステージ位置の信頼性を向上できる。
-
-        Args:
-            speed (str): 復帰速度(1〜9)。デフォルトは4。
-
-        Returns:
-            int: 成否。
         """
 
         self.raw_command(f"ORG1/{self._speed}/1")
         self.raw_command(f"ORG2/{self._speed}/1")
         self.raw_command(f"ORG3/{self._speed}/1")
-        return 0
 
     def _clip(self, orig, min, max, str=""):
         """origをintに変換し、minとmax内に収める。
@@ -237,7 +227,8 @@ def main():
     result = aries.raw_command(args.command)
     print(result)
 
-    del aries  # 明示的な切断要求(デストラクタがあるので書かなくても良い)
+    # 明示的な切断要求(デストラクタがあるので書かなくても良い)
+    del aries
     print("connection closed.")
     return 0
 
