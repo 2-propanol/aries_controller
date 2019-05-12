@@ -27,6 +27,7 @@ class Aries:
 
     Params:
         is_connected (bool): telnetが生きていればTrue、死んでいればFalseを返す。
+        is_stopped (bool): 3軸全てが停止していればTrue。Trueを代入すると緊急停止
         speed (int): 移動速度(1〜9)。int以外が代入された場合、型変換を試みる。
         x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
         y (int): ARIESの2軸パルス値と連動。0 〜 +90,000。
@@ -39,6 +40,9 @@ class Aries:
 
     is_connected = False
     _speed = 4
+
+    # 駆動要求を発行した後の待機時間
+    INTERVAL_TIME = 0.1
 
     def __init__(self, host="192.168.1.20", port=12321, timeout=10):
         """コンストラクタ。telnetへ接続開始。
@@ -67,40 +71,10 @@ class Aries:
             # そもそもtelnetに接続されなかったときの例外
             pass
 
-    def raw_command(self, cmd, timeout=300):
-        """"RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
-
-        返答があるまで待機する。
-
-        Args:
-            cmd (str): 対象の果物のマスタID。
-            timeout (int): 返答を待機する最大秒数。デフォルトは300秒。
-
-        Returns:
-            str: 生のコマンド実行結果。
-        """
-
-        self.tn.write(cmd.encode())
-        self.tn.write(b"\r\n")
-
-        # 改行されるまで待機して、得られた内容を返す
-        return self.tn.read_until(b"\r\n", timeout).decode()
-
-    def reset(self):
-        """原点近接センサ・エッジを用いてステージを厳密に原点へ復帰させる。
-
-        電源投入直後や長時間駆動させた後に実行することで、
-        ステージ位置の信頼性を向上できる。
-        """
-
-        self.raw_command(f"ORG1/{self._speed}/1")
-        self.raw_command(f"ORG2/{self._speed}/1")
-        self.raw_command(f"ORG3/{self._speed}/1")
-
     def _clip(self, orig, min, max, str=""):
         """origをintに変換し、minとmax内に収める。
 
-        プライベートメソッド。
+        プライベートメソッド想定。
         変換できなかった場合は例外を発生させる。
 
         Args:
@@ -126,45 +100,74 @@ class Aries:
             else:
                 return orig
 
-    def wait_until_stop(self):
+    def raw_command(self, cmd, timeout=300):
+        """"RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
+
+        返答があるまで待機する。
+
+        Args:
+            cmd (str): telnetに送信するコマンド。
+            timeout (int): 返答を待機する最大秒数。デフォルトは300秒。
+
+        Returns:
+            str: 生のコマンド実行結果。
+        """
+
+        self.tn.write(cmd.encode())
+        self.tn.write(b"\r\n")
+
+        # 改行されるまで待機して、得られた内容を返す
+        return self.tn.read_until(b"\r\n", timeout).decode()
+
+    def reset(self):
+        """原点近接センサ・エッジを用いてステージを厳密に原点へ復帰させる。
+
+        電源投入直後や長時間駆動させた後に実行することで、
+        ステージ位置の信頼性を向上できる。
+        """
+
+        self.raw_command(f"ORG1/{self._speed}/1")
+        self.raw_command(f"ORG2/{self._speed}/1")
+        self.raw_command(f"ORG3/{self._speed}/1")
+
+    def sleep_until_stop(self):
+        """ステージが停止状態になるまでsleepする。
+        """
+
         while not self.is_stopped:
             time.sleep(0.5)
 
-    x = property(doc="1軸の現在位置(角度)")
-    @x.getter
+    @property
     def x(self):
         return int(self.raw_command("RDP1").split()[2])
+
+    @property
+    def y(self):
+        return int(self.raw_command("RDP2").split()[2])
+
+    @property
+    def z(self):
+        return int(self.raw_command("RDP3").split()[2])
 
     @x.setter
     def x(self, x):
         self.raw_command(
             f"APS1/{self._speed}/{self._clip(x, -45000, 45000, 'x')}/1")
-        time.sleep(0.1)
-
-    y = property(doc="2軸の現在位置(角度)")
-    @y.getter
-    def y(self):
-        return int(self.raw_command("RDP2").split()[2])
+        time.sleep(self.INTERVAL_TIME)
 
     @y.setter
     def y(self, y):
         self.raw_command(
             f"APS2/{self._speed}/{self._clip(y, 0, 90000, 'y')}/1")
-        time.sleep(0.1)
-
-    z = property(doc="3軸の現在位置(角度)")
-    @z.getter
-    def z(self):
-        return int(self.raw_command("RDP3").split()[2])
+        time.sleep(self.INTERVAL_TIME)
 
     @z.setter
     def z(self, z):
         self.raw_command(
             f"APS3/{self._speed}/{self._clip(z, -360000, 360000, 'z')}/1")
-        time.sleep(0.1)
+        time.sleep(self.INTERVAL_TIME)
 
-    speed = property(doc="移動速度")
-    @speed.getter
+    @property
     def speed(self):
         return self._speed
 
@@ -172,8 +175,7 @@ class Aries:
     def speed(self, speed):
         self._speed = self._clip(speed, 0, 9, "speed")
 
-    is_stopped = property(doc="停止状態かどうか")
-    @is_stopped.getter
+    @property
     def is_stopped(self):
         # 3軸全てが停止状態であれば True
         return self.raw_command("STR1").split()[2] == "0" \
@@ -192,7 +194,7 @@ class Aries:
             self.raw_command("REM")
 
 
-def main():
+def __main():
     """
     コマンドラインツールとして使用するときに呼び出される
     Pythonモジュールとして使用する場合は呼び出さないこと
@@ -234,4 +236,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    __main()

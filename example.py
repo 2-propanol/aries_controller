@@ -23,7 +23,7 @@ def main():
 
     # コマンドの実行
     aries.reset()  # 初期位置に戻す
-    aries.wait_until_stop()  # 停止するまで待機する
+    aries.sleep_until_stop()  # 停止するまで待機する
 
     for i in range(3):
         aries.x = -45000
