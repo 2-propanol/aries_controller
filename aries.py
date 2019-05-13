@@ -32,6 +32,9 @@ class Aries:
         x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
         y (int): ARIESの2軸パルス値と連動。0 〜 +90,000。
         z (int): ARIESの3軸パルス値と連動。180,000で一周。-360,000 〜 +360,000。
+        x_by_degree (float): xを角度で読み書き。分解能は0.002度。
+        y_by_degree (float): yを角度で読み書き。分解能は0.001度。
+        z_by_degree (float): zを角度で読み書き。分解能は0.002度。
 
     Attributes:
         host (str): ARIESのIPアドレス。デフォルトは "192.168.1.20"。
@@ -164,8 +167,32 @@ class Aries:
     @z.setter
     def z(self, z):
         self.raw_command(
-            f"APS3/{self._speed}/{self._clip(z, -360000, 360000, 'z')}/1")
+            f"APS3/{self._speed}/{self._clip(z, -134217728, 134217727, 'z')}/1")
         time.sleep(self.INTERVAL_TIME)
+
+    @property
+    def x_by_degree(self):
+        return self.x / 500
+
+    @property
+    def y_by_degree(self):
+        return self.y / 1000
+
+    @property
+    def z_by_degree(self):
+        return self.z / 500
+
+    @x_by_degree.setter
+    def x_by_degree(self, x_by_degree):
+        self.x = x_by_degree * 500
+
+    @y_by_degree.setter
+    def y_by_degree(self, y_by_degree):
+        self.y = y_by_degree * 1000
+
+    @z_by_degree.setter
+    def z_by_degree(self, z_by_degree):
+        self.z = z_by_degree * 500
 
     @property
     def speed(self):
