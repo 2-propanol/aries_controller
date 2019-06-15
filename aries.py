@@ -17,7 +17,6 @@
 """
 
 import time
-import argparse
 from telnetlib import Telnet
 from socket import timeout as socket_timeout
 
@@ -221,25 +220,21 @@ class Aries:
             self.raw_command("REM")
 
 
-def __main():
+if __name__ == '__main__':
     """
-    コマンドラインツールとして使用するときに呼び出される
-    Pythonモジュールとして使用する場合は呼び出さないこと
+    コマンドラインツールとして使用するときの処理
     """
+    import argparse
+    import sys
 
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str,
                         help="transfering command to ARIES")
-    parser.add_argument("--host", type=str,
+    parser.add_argument("--host", type=str, default="192.168.1.20",
                         help="ARIES's IP address. default is 192.168.1.20")
-    parser.add_argument("--port", type=int,
+    parser.add_argument("--port", type=int, default=12321,
                         help="ARIES's port. default is 12321")
-
     args = parser.parse_args()
-    if args.host is None:
-        args.host = "192.168.1.20"
-    if args.port is None:
-        args.port = 12321
 
     # ARIESへの接続を試みる
     print(f"Trying {args.host}:{args.port}.")
@@ -250,7 +245,7 @@ def __main():
         print(f"connected to {args.host}:{args.port}.")
     else:
         print("connection failed.")
-        return 1
+        sys.exit(1)
 
     # コマンドの実行と結果の表示
     result = aries.raw_command(args.command)
@@ -259,8 +254,4 @@ def __main():
     # 明示的な切断要求(デストラクタがあるので書かなくても良い)
     del aries
     print("connection closed.")
-    return 0
-
-
-if __name__ == '__main__':
-    __main()
+    sys.exit(0)
