@@ -21,7 +21,7 @@ class Aries:
     """ARIES 3軸ステージを制御するクラス
 
     Attributes:
-        is_stopped (bool): 3軸全てが停止していればTrue。Trueを代入すると緊急停止
+        is_stopped (bool): 3軸全てが停止していればTrue。
         speed (int): 移動速度(1〜9)。int以外が代入された場合、型変換を試みる。
         x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
         y (int): ARIESの2軸パルス値と連動。0 〜 +90,000。
@@ -126,6 +126,20 @@ class Aries:
             time.sleep(0.5)
         return
 
+    def stop_all_stages(self, immediate=False):
+        """3軸全てを停止させる
+
+        Args:
+            immediate (bool): Falseで減速停止、Trueで緊急停止
+        """
+        self.raw_command(f"STP1/{int(immediate)}")
+        self.raw_command(f"STP2/{int(immediate)}")
+        self.raw_command(f"STP3/{int(immediate)}")
+
+    def unlock_emergency_stop(self):
+        """非常停止信号のソフトウェアロックを解除する"""
+        self.raw_command("REM")
+
     @property
     def x(self):
         return int(self.raw_command("RDP1").split()[2])
@@ -194,17 +208,6 @@ class Aries:
         return self.raw_command("STR1").split()[2] == "0" \
             and self.raw_command("STR2").split()[2] == "0" \
             and self.raw_command("STR3").split()[2] == "0"
-
-    @is_stopped.setter
-    def is_stopped(self, _is_stopped):
-        if _is_stopped:
-            # 3軸全てを緊急停止させる
-            self.raw_command("STP1/0")
-            self.raw_command("STP2/0")
-            self.raw_command("STP3/0")
-        else:
-            # 非常停止信号のソフトウェアロックを解除する
-            self.raw_command("REM")
 
 
 def main():
