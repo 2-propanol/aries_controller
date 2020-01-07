@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*
-
-"""
-    ARIES 3軸ステージをPythonで制御する
+"""ARIES 3軸ステージをPythonで制御する
 
     Usage: python3 aries.py --host <HOST> --port <PROT> <operation>
 
@@ -220,10 +216,8 @@ class Aries:
             self.raw_command("REM")
 
 
-if __name__ == '__main__':
-    """
-    コマンドラインツールとして使用するときの処理
-    """
+def main():
+    """コマンドラインツールとして使用するときの処理"""
     import argparse
     import sys
 
@@ -255,3 +249,7 @@ if __name__ == '__main__':
     del aries
     print("connection closed.")
     sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

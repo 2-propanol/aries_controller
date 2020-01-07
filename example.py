@@ -1,9 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*
-
-"""
-    aries.pyのモジュールとしての使用例
-"""
+"""aries.pyのモジュールとしての使用例"""
 
 from aries import Aries
 
