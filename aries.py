@@ -63,17 +63,16 @@ class Aries:
             # そもそもtelnetに接続されなかったときの例外
             pass
 
-    def _clip(self, orig, min, max, str=""):
+    def _clip(self, orig, min, max):
         """`orig`を`int`に変換し、`min`と`max`内に収める。
 
         プライベートメソッド想定。
         変換できなかった場合は例外を発生させる。
 
         Args:
-            orig (any): clip対象の値。
+            orig (int like): clip対象の値。
             min (int): 最小値。
             max (int): 最大値。
-            str (str): エラーメッセージに使う文字列。
 
         Returns:
             int: 変換済みの値。
@@ -81,13 +80,13 @@ class Aries:
         try:
             orig = int(orig)
         except ValueError:
-            raise ValueError(f"(ARIES) error: '{orig}' is not int. in {str}")
+            raise ValueError(f"(ARIES) error: '{orig}' is not int.")
         else:
             if orig > max:
-                print(f"(ARIES) warn: {str} is limited to {max}.")
+                print(f"(ARIES) warn: {orig} is limited to {max}.")
                 return max
             elif orig < min:
-                print(f"(ARIES) warn: {str} is limited to {min}.")
+                print(f"(ARIES) warn: {orig} is limited to {min}.")
                 return min
             else:
                 return orig
