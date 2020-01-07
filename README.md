@@ -7,7 +7,7 @@ Pythonの`telnetlib`モジュールを使うため、`telnet`コマンドがイ�
 
 ## コマンドラインツール互換
 ```
-python3 aries.py --host <HOST> --port <PROT> <operation>
+python3 aries.py --host <HOST> --port <PORT> <operation>
 ```
 とするとARIESにコマンドを送信できます。
 
