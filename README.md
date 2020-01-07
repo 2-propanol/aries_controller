@@ -1,6 +1,7 @@
-# ARIES 3軸ステージをpythonで制御する
-telnetの煩わしさを解消する目的で作成。
-ARIESの3軸ステージをPythonから制御できます。
+# ARIES / LYNX モーターコントローラのpython制御
+[神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御します。
+telnetのラッパーです。
+研究室の3軸ステージの制御用に作成。
 Pythonの`telnetlib`モジュールを使うため、`telnet`コマンドがインストールされていなくても実行が可能です。
 
 
@@ -12,7 +13,7 @@ python3 aries.py --host <HOST> --port <PROT> <operation>
 ```
 ./aries.py --host <HOST> --port <PROT> <operation>
 ```
-とするとワンライナーでARIESにコマンドを送信できます。
+とするとARIESにコマンドを送信できます。
 
 `HOST`, `PORT`は省略した場合、`192.168.1.20`, `12321`が使われます。
 
