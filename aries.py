@@ -1,15 +1,15 @@
 """ARIES 3軸ステージをPythonで制御する
 
-    Usage: python3 aries.py --host <HOST> --port <PROT> <operation>
+Usage: python3 aries.py --host <HOST> --port <PROT> <operation>
 
-    <HOST>
-        ARIESのIPアドレス。省略すると 192.168.1.20 が使用される
+<HOST>
+    ARIESのIPアドレス。省略すると 192.168.1.20 が使用される
 
-    <PORT>
-        ARIESのポート番号。省略すると 12321 が使用される
+<PORT>
+    ARIESのポート番号。省略すると 12321 が使用される
 
-    <operation>
-        ARIESに送信するコマンド。RPS1/4/90000/1 など。
+<operation>
+    ARIESに送信するコマンド。RPS1/4/90000/1 など。
 """
 
 import time
@@ -20,7 +20,7 @@ from socket import timeout as socket_timeout
 class Aries:
     """ARIES 3軸ステージを制御するクラス
 
-    Params:
+    Attributes:
         is_stopped (bool): 3軸全てが停止していればTrue。Trueを代入すると緊急停止
         speed (int): 移動速度(1〜9)。int以外が代入された場合、型変換を試みる。
         x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
@@ -29,10 +29,6 @@ class Aries:
         x_by_degree (float): xを角度で読み書き。分解能は0.002度。
         y_by_degree (float): yを角度で読み書き。分解能は0.001度。
         z_by_degree (float): zを角度で読み書き。分解能は0.002度。
-
-    Attributes:
-        host (str): ARIESのIPアドレス。デフォルトは "192.168.1.20"。
-        port (int): ARIESの接続に使うポート番号。デフォルトは 12321。
     """
 
     _speed = 4
@@ -41,23 +37,26 @@ class Aries:
     INTERVAL_TIME = 0.1
 
     def __init__(self, host="192.168.1.20", port=12321, timeout=10):
-        """コンストラクタ。telnetへ接続開始。
+        """telnetへ接続開始。
 
         接続されるかタイムアウトするまで待機する。
-        """
 
+        Args:
+            host (str): ARIESのIPアドレス。デフォルトは "192.168.1.20"。
+            port (int): ARIESのポート番号。デフォルトは 12321。
+            timeout (int): 接続試行を打ち切るまでの秒数。デフォルトは 10秒。
+        """
         try:
             self.tn = Telnet(host, port, timeout)
         except (ConnectionRefusedError, OSError, socket_timeout) as err:
             raise ConnectionError(f"(ARIES) error: {err}")
 
     def __del__(self):
-        """デストラクタ。telnetから切断。
+        """telnetから切断。
 
         telnetプロセスがpython終了後も残るのを防ぐため。
         `del aries`のように明示的に呼び出す必要はない。
         """
-
         try:
             self.tn.close()
         except AttributeError:
@@ -65,7 +64,7 @@ class Aries:
             pass
 
     def _clip(self, orig, min, max, str=""):
-        """origをintに変換し、minとmax内に収める。
+        """`orig`を`int`に変換し、`min`と`max`内に収める。
 
         プライベートメソッド想定。
         変換できなかった場合は例外を発生させる。
@@ -82,19 +81,19 @@ class Aries:
         try:
             orig = int(orig)
         except ValueError:
-            raise ValueError(f"ARIES: error: '{orig}' is not int. in {str}")
+            raise ValueError(f"(ARIES) error: '{orig}' is not int. in {str}")
         else:
             if orig > max:
-                print(f"ARIES: warn: {str} is limited to {max}.")
+                print(f"(ARIES) warn: {str} is limited to {max}.")
                 return max
             elif orig < min:
-                print(f"ARIES: warn: {str} is limited to {min}.")
+                print(f"(ARIES) warn: {str} is limited to {min}.")
                 return min
             else:
                 return orig
 
     def raw_command(self, cmd, timeout=300):
-        """"RPS1/4/90000/1"のような従来のコマンドをそのまま使用する。
+        """'RPS1/4/90000/1'のような従来のコマンドをそのまま使用する。
 
         返答があるまで待機する。
 
@@ -105,7 +104,6 @@ class Aries:
         Returns:
             str: 生のコマンド実行結果。
         """
-
         self.tn.write(cmd.encode())
         self.tn.write(b"\r\n")
 
@@ -118,17 +116,15 @@ class Aries:
         電源投入直後や長時間駆動させた後に実行することで、
         ステージ位置の信頼性を向上できる。
         """
-
         self.raw_command(f"ORG1/{self._speed}/1")
         self.raw_command(f"ORG2/{self._speed}/1")
         self.raw_command(f"ORG3/{self._speed}/1")
 
     def sleep_until_stop(self):
-        """ステージが停止状態になるまでsleepする。
-        """
-
+        """ステージが停止状態になるまでsleepする。"""
         while not self.is_stopped:
             time.sleep(0.5)
+        return
 
     @property
     def x(self):
@@ -227,7 +223,7 @@ def main():
     # ARIESへの接続を試みる
     print(f"Trying {args.host}:{args.port}.")
     try:
-    aries = Aries(host=args.host, port=args.port)
+        aries = Aries(host=args.host, port=args.port)
     except ConnectionError as err:
         # 接続失敗時は``ConnetionError`を投げる
         print(err)
