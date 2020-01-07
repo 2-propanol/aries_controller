@@ -9,10 +9,6 @@ Pythonの`telnetlib`モジュールを使うため、`telnet`コマンドがイ�
 ```
 python3 aries.py --host <HOST> --port <PROT> <operation>
 ```
-あるいは、Unix系では実行権限をつけた上で
-```
-./aries.py --host <HOST> --port <PROT> <operation>
-```
 とするとARIESにコマンドを送信できます。
 
 `HOST`, `PORT`は省略した場合、`192.168.1.20`, `12321`が使われます。
@@ -39,11 +35,11 @@ telnetの切断はPython終了時(インスタンスが破棄されるとき)に
 ### 実装済みメソッド
 詳しい説明は aries.py の Docstring に記載しています。
 
-- raw_command  
+- `raw_command()`  
     telnetで使用できるコマンドをそのまま実行する
-- reset  
+- `reset()`  
     3軸全てを原点へ復帰させる
-- sleep_until_stop  
+- `sleep_until_stop()`  
     3軸全てが停止するまで`time.sleep()`する
 
 
@@ -72,7 +68,7 @@ print(aries.x_by_degree)  # 20.36
 time.sleep(1)
 print(aries.x_by_degree)  # 30.0
 ```
-のように相対位置駆動を要求した直後は移動中の値が代入されています。
+のように相対位置駆動を要求した直後は移動中の値が返されます。
 
 よって、確実な値が必要な場合は`aries.sleep_until_stop()`を使って移動完了まで待つか、一時変数を使ってください。
 ```python
