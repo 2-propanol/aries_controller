@@ -1,17 +1,25 @@
 """aries.pyのモジュールとしての使用例"""
 
+from time import sleep
+
 from aries import Aries
 
 
 def main():
-    # ARIESへの接続を試みる
-    print("Trying 192.168.1.20:12321.")
-    aries = Aries()
-
-    # 接続されているかを is_connected で調べる
-    if aries.is_connected:
-        print(f"connected to 192.168.1.20:12321.")
+    # ARIESへの接続を試みる(2秒待機して3回まで再試行する)
+    for i in range(3):
+        try:
+            print("Trying 192.168.1.20:12321.")
+            aries = Aries()
+        except ConnectionError as err:
+            # 接続失敗時は``ConnetionError`を投げる
+            print(err)
+            sleep(2)
+        else:
+            print(f"connected to 192.168.1.20:12321.")
+            break
     else:
+        # 3回とも接続に失敗した(`break`されなかった)
         print("connection failed.")
         return 1
 

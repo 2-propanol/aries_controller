@@ -21,7 +21,6 @@ class Aries:
     """ARIES 3軸ステージを制御するクラス
 
     Params:
-        is_connected (bool): telnetが生きていればTrue、死んでいればFalseを返す。
         is_stopped (bool): 3軸全てが停止していればTrue。Trueを代入すると緊急停止
         speed (int): 移動速度(1〜9)。int以外が代入された場合、型変換を試みる。
         x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
@@ -36,7 +35,6 @@ class Aries:
         port (int): ARIESの接続に使うポート番号。デフォルトは 12321。
     """
 
-    is_connected = False
     _speed = 4
 
     # 駆動要求を発行した後の待機時間
@@ -50,10 +48,8 @@ class Aries:
 
         try:
             self.tn = Telnet(host, port, timeout)
-        except (ConnectionRefusedError, socket_timeout) as err:
-            print("ARIES: error: ", err)
-        else:
-            self.is_connected = True
+        except (ConnectionRefusedError, OSError, socket_timeout) as err:
+            raise ConnectionError(f"(ARIES) error: {err}")
 
     def __del__(self):
         """デストラクタ。telnetから切断。
@@ -64,7 +60,6 @@ class Aries:
 
         try:
             self.tn.close()
-            self.is_connected = False
         except AttributeError:
             # そもそもtelnetに接続されなかったときの例外
             pass
@@ -219,7 +214,6 @@ class Aries:
 def main():
     """コマンドラインツールとして使用するときの処理"""
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str,
@@ -232,14 +226,15 @@ def main():
 
     # ARIESへの接続を試みる
     print(f"Trying {args.host}:{args.port}.")
+    try:
     aries = Aries(host=args.host, port=args.port)
-
-    # 接続されているかを is_connected で調べる
-    if aries.is_connected:
-        print(f"connected to {args.host}:{args.port}.")
-    else:
+    except ConnectionError as err:
+        # 接続失敗時は``ConnetionError`を投げる
+        print(err)
         print("connection failed.")
-        sys.exit(1)
+        return 1
+    else:
+        print(f"connected to {args.host}:{args.port}.")
 
     # コマンドの実行と結果の表示
     result = aries.raw_command(args.command)
@@ -248,7 +243,7 @@ def main():
     # 明示的な切断要求(デストラクタがあるので書かなくても良い)
     del aries
     print("connection closed.")
-    sys.exit(0)
+    return 0
 
 
 if __name__ == '__main__':
