@@ -31,13 +31,18 @@ class Aries:
         z_by_degree (float): zを角度で読み書き。分解能は0.002度。
     """
 
-    _speed = 4
+    __speed = 4
 
     # 駆動要求を発行した後の待機時間
     INTERVAL_TIME = 0.1
 
+    # 各軸の分解能
+    PULSE_PER_DEGREE_X: int = 500
+    PULSE_PER_DEGREE_Y: int = 1000
+    PULSE_PER_DEGREE_Z: int = 500
+
     def __init__(self, host="192.168.1.20", port=12321, timeout=10):
-        """telnetへ接続開始。
+        """telnetへ接続要求。
 
         接続されるかタイムアウトするまで待機する。
 
@@ -140,73 +145,73 @@ class Aries:
         self.raw_command("REM")
 
     @property
+    def is_stopped(self):
+        """3軸全てが停止状態であれば`True`"""
+        return self.raw_command("STR1").split()[2] == "0" \
+            and self.raw_command("STR2").split()[2] == "0" \
+            and self.raw_command("STR3").split()[2] == "0"
+
+    @property
     def x(self):
         return int(self.raw_command("RDP1").split()[2])
+
+    @x.setter
+    def x(self, x):
+        self.raw_command(
+            f"APS1/{self.__speed}/{self._clip(x, -45000, 45000, 'x')}/1")
+        time.sleep(self.INTERVAL_TIME)
 
     @property
     def y(self):
         return int(self.raw_command("RDP2").split()[2])
 
+    @y.setter
+    def y(self, y):
+        self.raw_command(
+            f"APS2/{self.__speed}/{self._clip(y, 0, 90000, 'y')}/1")
+        time.sleep(self.INTERVAL_TIME)
+
     @property
     def z(self):
         return int(self.raw_command("RDP3").split()[2])
 
-    @x.setter
-    def x(self, x):
-        self.raw_command(
-            f"APS1/{self._speed}/{self._clip(x, -45000, 45000, 'x')}/1")
-        time.sleep(self.INTERVAL_TIME)
-
-    @y.setter
-    def y(self, y):
-        self.raw_command(
-            f"APS2/{self._speed}/{self._clip(y, 0, 90000, 'y')}/1")
-        time.sleep(self.INTERVAL_TIME)
-
     @z.setter
     def z(self, z):
         self.raw_command(
-            f"APS3/{self._speed}/{self._clip(z, -134217728, 134217727, 'z')}/1")
+            f"APS3/{self.__speed}/{self._clip(z, -134217728, 134217727, 'z')}/1")
         time.sleep(self.INTERVAL_TIME)
 
     @property
     def x_by_degree(self):
-        return self.x / 500
-
-    @property
-    def y_by_degree(self):
-        return self.y / 1000
-
-    @property
-    def z_by_degree(self):
-        return self.z / 500
+        return self.x / self.PULSE_PER_DEGREE__X
 
     @x_by_degree.setter
     def x_by_degree(self, x_by_degree):
-        self.x = x_by_degree * 500
+        self.x = x_by_degree * self.PULSE_PER_DEGREE__X
+
+    @property
+    def y_by_degree(self):
+        return self.y / self.PULSE_PER_DEGREE__Y
 
     @y_by_degree.setter
     def y_by_degree(self, y_by_degree):
-        self.y = y_by_degree * 1000
+        self.y = y_by_degree * self.PULSE_PER_DEGREE__Y
+
+    @property
+    def z_by_degree(self):
+        return self.z / self.PULSE_PER_DEGREE__Z
 
     @z_by_degree.setter
     def z_by_degree(self, z_by_degree):
-        self.z = z_by_degree * 500
+        self.z = z_by_degree * self.PULSE_PER_DEGREE__Z
 
     @property
     def speed(self):
-        return self._speed
+        return self.__speed
 
     @speed.setter
     def speed(self, speed):
-        self._speed = self._clip(speed, 0, 9, "speed")
-
-    @property
-    def is_stopped(self):
-        # 3軸全てが停止状態であれば True
-        return self.raw_command("STR1").split()[2] == "0" \
-            and self.raw_command("STR2").split()[2] == "0" \
-            and self.raw_command("STR3").split()[2] == "0"
+        self.__speed = self._clip(speed, 0, 9)
 
 
 def main():
