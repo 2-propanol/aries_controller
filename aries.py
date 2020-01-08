@@ -69,33 +69,31 @@ class Aries:
             # そもそもtelnetに接続されなかったときの例外
             pass
 
-    def _clip(self, orig, min: int, max: int) -> int:
-        """`orig`を`int`に変換し、`min`と`max`内に収める。
+    def _clip(self, src: int, min_val: int, max_val: int) -> int:
+        """`src`を、`min_val`と`max_val`内に収める。
 
         プライベートメソッド想定。
-        `orig`が`int`に変換できなかった場合は例外を発生させる。
+        `src`が`int`でなかった場合は`TypeError`を投げる。
 
         Args:
-            orig (int like): clip対象の値。
-            min: 最小値。
-            max: 最大値。
+            src: clip対象の値。
+            min_val: 最小値。
+            max_val: 最大値。
 
         Return:
             変換済みの値。
         """
-        try:
-            orig = int(orig)
-        except ValueError:
-            raise ValueError(f"(ARIES) error: '{orig}' is not int.")
+        if type(src) is not int:
+            raise TypeError(f"(ARIES) error: '{src}' is not int.")
         else:
-            if orig > max:
-                print(f"(ARIES) warn: {orig} is limited to {max}.")
-                return max
-            elif orig < min:
-                print(f"(ARIES) warn: {orig} is limited to {min}.")
-                return min
+            if src > max_val:
+                print(f"(ARIES) warn: {src} is limited to {max_val}.")
+                return max_val
+            elif src < min_val:
+                print(f"(ARIES) warn: {src} is limited to {min_val}.")
+                return min_val
             else:
-                return orig
+                return src
 
     def raw_command(self, cmd: str, timeout: int = 300) -> str:
         """'RPS1/4/90000/1'のような従来のコマンドをそのまま使用する。
