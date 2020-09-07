@@ -9,26 +9,28 @@ Usage: python3 aries.py --host <HOST> --port <PROT> <operation>
     ARIESのポート番号。省略すると 12321 が使用される
 
 <operation>
-    ARIESに送信するコマンド。RPS1/4/90000/1 など。
+    ARIESに送信するコマンド。RPS1/4/90000/1 など。省略不可。
 """
 
 from socket import timeout as socket_timeout
+from sys import stderr
 from telnetlib import Telnet
-import time
+from time import sleep
+from typing import Sequence, Tuple
 
 
 class Aries:
     """ARIES 3軸ステージを制御するクラス
 
+    1軸(ロール): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
+    2軸(ピッチ): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
+    3軸(ヨー): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
+
     Attributes:
         is_stopped (bool): 3軸全てが停止していればTrue。Read-Only。
         speed (int): 3軸全てのステージの移動速度。1〜9。
-        x (int): ARIESの1軸パルス値と連動。-45,000 〜 +45,000。
-        y (int): ARIESの2軸パルス値と連動。0 〜 +90,000。
-        z (int): ARIESの3軸パルス値と連動。180,000で一周。-360,000 〜 +360,000。
-        x_by_degree (float): xを角度で読み書き。分解能は0.002度。
-        y_by_degree (float): yを角度で読み書き。分解能は0.001度。
-        z_by_degree (float): zを角度で読み書き。分解能は0.002度。
+        position (Sequence[float, float, float]): 各軸の角度と連動。
+        position_by_pulse (Sequence[int, int, int]): 各軸のパルス値と連動。
     """
 
     __speed: int = 4
@@ -41,8 +43,9 @@ class Aries:
     PULSE_PER_DEGREE_Y: int = 1000
     PULSE_PER_DEGREE_Z: int = 500
 
-    def __init__(self, host: str = "192.168.1.20", port: int = 12321,
-                 timeout: int = 10) -> None:
+    def __init__(
+        self, host: str = "192.168.1.20", port: int = 12321, timeout: int = 10
+    ) -> None:
         """telnetへ接続要求。
 
         接続されるかタイムアウトするまで待機する。
@@ -69,6 +72,7 @@ class Aries:
             # そもそもtelnetに接続されなかったときの例外
             pass
 
+    @staticmethod
     def _clip(self, src: int, min_val: int, max_val: int) -> int:
         """`src`を、`min_val`と`max_val`内に収める。
 
@@ -87,10 +91,10 @@ class Aries:
             raise TypeError(f"(ARIES) error: '{src}' is not int.")
         else:
             if src > max_val:
-                print(f"(ARIES) warn: {src} is limited to {max_val}.")
+                print(f"(ARIES) warn: {src} is limited to {max_val}.", file=stderr)
                 return max_val
             elif src < min_val:
-                print(f"(ARIES) warn: {src} is limited to {min_val}.")
+                print(f"(ARIES) warn: {src} is limited to {min_val}.", file=stderr)
                 return min_val
             else:
                 return src
@@ -126,7 +130,7 @@ class Aries:
     def sleep_until_stop(self) -> None:
         """ステージが停止状態になるまでsleepする。"""
         while not self.is_stopped:
-            time.sleep(0.5)
+            sleep(0.5)
         return
 
     def stop_all_stages(self, immediate: bool = False) -> None:
@@ -146,69 +150,52 @@ class Aries:
     @property
     def is_stopped(self) -> bool:
         """3軸全てが停止状態であれば`True`"""
-        return self.raw_command("STR1").split()[2] == "0" \
-            and self.raw_command("STR2").split()[2] == "0" \
+        return (
+            self.raw_command("STR1").split()[2] == "0"
+            and self.raw_command("STR2").split()[2] == "0"
             and self.raw_command("STR3").split()[2] == "0"
+        )
 
     @property
-    def x(self) -> int:
-        """ARIESの1軸パルス値と連動。-45,000 〜 +45,000。"""
-        return int(self.raw_command("RDP1").split()[2])
+    def position_by_pulse(self) -> Tuple[int, int, int]:
+        x = int(self.raw_command("RDP1").split()[2])
+        y = int(self.raw_command("RDP2").split()[2])
+        z = int(self.raw_command("RDP3").split()[2])
+        return (x, y, z)
 
-    @x.setter
-    def x(self, x: int) -> None:
-        x = self._clip(x, -45000, 45000)
-        self.raw_command(f"APS1/{self.__speed}/{x}/1")
-        time.sleep(self.INTERVAL_TIME)
+    @position_by_pulse.setter
+    def position_by_pulse(self, position: Sequence[int, int, int]) -> None:
+        x = self._clip(position[0], -45000, 45000)
+        y = self._clip(position[1], 0, 90000)
+        z = self._clip(position[2], -134217728, 134217727)
 
-    @property
-    def y(self) -> int:
-        """ARIESの2軸パルス値と連動。0 〜 +90,000。"""
-        return int(self.raw_command("RDP2").split()[2])
-
-    @y.setter
-    def y(self, y: int) -> None:
-        y = self._clip(y, 0, 90000)
-        self.raw_command(f"APS2/{self.__speed}/{y}/1")
-        time.sleep(self.INTERVAL_TIME)
-
-    @property
-    def z(self) -> int:
-        """ARIESの3軸パルス値と連動。180,000で一周。-360,000 〜 +360,000。"""
-        return int(self.raw_command("RDP3").split()[2])
-
-    @z.setter
-    def z(self, z: int) -> None:
-        z = self._clip(z, -134217728, 134217727)
-        self.raw_command(f"APS3/{self.__speed}/{z}/1")
-        time.sleep(self.INTERVAL_TIME)
+        last_pos = self.position_by_pulse
+        if last_pos[0] != x:
+            self.raw_command(f"APS1/{self.__speed}/{x}/1")
+            sleep(self.INTERVAL_TIME)
+        if last_pos[1] != x:
+            self.raw_command(f"APS2/{self.__speed}/{y}/1")
+            sleep(self.INTERVAL_TIME)
+        if last_pos[2] != x:
+            self.raw_command(f"APS3/{self.__speed}/{z}/1")
+            sleep(self.INTERVAL_TIME)
 
     @property
-    def x_by_degree(self) -> float:
-        """xを角度で読み書き。分解能は0.002度。"""
-        return self.x / self.PULSE_PER_DEGREE_X
+    def position(self) -> Tuple[float, float, float]:
+        position = self.position_by_pulse
+        x = position[0] / self.PULSE_PER_DEGREE_X
+        y = position[1] / self.PULSE_PER_DEGREE_Y
+        z = position[2] / self.PULSE_PER_DEGREE_Z
+        return (x, y, z)
 
-    @x_by_degree.setter
-    def x_by_degree(self, x_by_degree: float) -> None:
-        self.x = int(x_by_degree * self.PULSE_PER_DEGREE_X)
-
-    @property
-    def y_by_degree(self) -> float:
-        """yを角度で読み書き。分解能は0.001度。"""
-        return self.y / self.PULSE_PER_DEGREE_Y
-
-    @y_by_degree.setter
-    def y_by_degree(self, y_by_degree: float) -> None:
-        self.y = int(y_by_degree * self.PULSE_PER_DEGREE_Y)
-
-    @property
-    def z_by_degree(self) -> float:
-        """zを角度で読み書き。分解能は0.002度。"""
-        return self.z / self.PULSE_PER_DEGREE_Z
-
-    @z_by_degree.setter
-    def z_by_degree(self, z_by_degree: float) -> None:
-        self.z = int(z_by_degree * self.PULSE_PER_DEGREE_Z)
+    @position.setter
+    def position(self, position: Sequence[float, float, float]) -> None:
+        position = (
+            int(position[0] * self.PULSE_PER_DEGREE_X),
+            int(position[1] * self.PULSE_PER_DEGREE_Y),
+            int(position[2] * self.PULSE_PER_DEGREE_Z),
+        )
+        self.position_by_pulse = position
 
     @property
     def speed(self) -> int:
@@ -225,12 +212,16 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str,
-                        help="transfering command to ARIES")
-    parser.add_argument("--host", type=str, default="192.168.1.20",
-                        help="ARIES's IP address. default is 192.168.1.20")
-    parser.add_argument("--port", type=int, default=12321,
-                        help="ARIES's port. default is 12321")
+    parser.add_argument("command", type=str, help="transfering command to ARIES")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="192.168.1.20",
+        help="ARIES's IP address. default is 192.168.1.20",
+    )
+    parser.add_argument(
+        "--port", type=int, default=12321, help="ARIES's port. default is 12321"
+    )
     args = parser.parse_args()
 
     # ARIESへの接続を試みる
@@ -255,5 +246,5 @@ def main() -> int:
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

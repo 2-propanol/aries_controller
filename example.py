@@ -12,7 +12,7 @@ def main():
             print("Trying 192.168.1.20:12321.")
             aries = Aries()
         except ConnectionError as err:
-            # 接続失敗時は``ConnetionError`を投げる
+            # 接続失敗時は`ConnetionError`を投げる
             print(err)
             sleep(2)
         else:
