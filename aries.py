@@ -29,8 +29,8 @@ class Aries:
     Attributes:
         is_stopped (bool): 3軸全てが停止していればTrue。Read-Only。
         speed (int): 3軸全てのステージの移動速度。1〜9。
-        position (Sequence[float, float, float]): 各軸の角度と連動。
-        position_by_pulse (Sequence[int, int, int]): 各軸のパルス値と連動。
+        position (Sequence[float]): 各軸の角度と連動。
+        position_by_pulse (Sequence[int]): 各軸のパルス値と連動。
     """
 
     __speed: int = 4
@@ -164,7 +164,7 @@ class Aries:
         return (x, y, z)
 
     @position_by_pulse.setter
-    def position_by_pulse(self, position: Sequence[int, int, int]) -> None:
+    def position_by_pulse(self, position: Sequence[int]) -> None:
         x = self._clip(position[0], -45000, 45000)
         y = self._clip(position[1], 0, 90000)
         z = self._clip(position[2], -134217728, 134217727)
@@ -189,7 +189,7 @@ class Aries:
         return (x, y, z)
 
     @position.setter
-    def position(self, position: Sequence[float, float, float]) -> None:
+    def position(self, position: Sequence[float]) -> None:
         position = (
             int(position[0] * self.PULSE_PER_DEGREE_X),
             int(position[1] * self.PULSE_PER_DEGREE_Y),
