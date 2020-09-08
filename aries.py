@@ -73,7 +73,7 @@ class Aries:
             pass
 
     @staticmethod
-    def _clip(self, src: int, min_val: int, max_val: int) -> int:
+    def _clip(src: int, min_val: int, max_val: int) -> int:
         """`src`を、`min_val`と`max_val`内に収める。
 
         プライベートメソッド想定。
