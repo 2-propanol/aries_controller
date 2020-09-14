@@ -1,12 +1,12 @@
-"""ARIES 3軸ステージをPythonで制御する
+"""ARIES 4軸ステージをPythonで制御する
 
-Usage: python3 aries.py --host <HOST> --port <PROT> <operation>
+Usage: aries --host <HOST> --port <PROT> <operation>
 
 <HOST>
-    ARIESのIPアドレス。省略すると 192.168.1.20 が使用される
+    ARIESのIPアドレス。省略すると 192.168.1.20 が使用される。
 
 <PORT>
-    ARIESのポート番号。省略すると 12321 が使用される
+    ARIESのポート番号。省略すると 12321 が使用される。
 
 <operation>
     ARIESに送信するコマンド。RPS1/4/90000/1 など。省略不可。
@@ -22,9 +22,10 @@ from typing import Sequence, Tuple
 class Aries:
     """ARIES 3軸ステージを制御するクラス
 
-    1軸(ロール): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
-    2軸(ピッチ): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
-    3軸(ヨー): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
+    1軸(パン): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
+    2軸(チルト): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
+    3軸(ロール): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
+    4軸(光源): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
 
     Attributes:
         is_stopped (bool): 3軸全てが停止していればTrue。Read-Only。
@@ -42,6 +43,7 @@ class Aries:
     PULSE_PER_DEGREE_X: int = 500
     PULSE_PER_DEGREE_Y: int = 1000
     PULSE_PER_DEGREE_Z: int = 500
+    PULSE_PER_DEGREE_U: int = 500
 
     def __init__(
         self, host: str = "192.168.1.20", port: int = 12321, timeout: int = 10
@@ -76,7 +78,6 @@ class Aries:
     def _clip(src: int, min_val: int, max_val: int) -> int:
         """`src`を、`min_val`と`max_val`内に収める。
 
-        プライベートメソッド想定。
         `src`が`int`でなかった場合は`TypeError`を投げる。
 
         Args:
@@ -100,7 +101,7 @@ class Aries:
                 return src
 
     def raw_command(self, cmd: str, timeout: int = 300) -> str:
-        """'RPS1/4/90000/1'のような従来のコマンドをそのまま使用する。
+        """'RPS1/4/90000/1'のようなtelnet用コマンドを送信する。
 
         返答があるまで待機する。
 
@@ -157,36 +158,62 @@ class Aries:
         )
 
     @property
-    def position_by_pulse(self) -> Tuple[int, int, int]:
+    def position_by_pulse(self) -> Tuple[int, int, int, int]:
+        """各軸のパルス値と連動。インデックス単位での書き込みは出来ない。
+
+        Example:
+            >>> Aries.position_by_pulse
+            (0, 0, 0, 0)
+            >>> Aries.position_by_pulse[3] = 45000
+            <NG (TypeError)>
+            >>> Aries.position_by_pulse = [0,0,0,45000]
+            <OK>
+        """
         x = int(self.raw_command("RDP1").split()[2])
         y = int(self.raw_command("RDP2").split()[2])
         z = int(self.raw_command("RDP3").split()[2])
-        return (x, y, z)
+        u = int(self.raw_command("RDP4").split()[2])
+        return (x, y, z, u)
 
     @position_by_pulse.setter
     def position_by_pulse(self, position: Sequence[int]) -> None:
         x = self._clip(position[0], -45000, 45000)
         y = self._clip(position[1], 0, 90000)
         z = self._clip(position[2], -134217728, 134217727)
+        u = self._clip(position[3], -134217728, 134217727)
 
         last_pos = self.position_by_pulse
         if last_pos[0] != x:
             self.raw_command(f"APS1/{self.__speed}/{x}/1")
             sleep(self.INTERVAL_TIME)
-        if last_pos[1] != x:
+        if last_pos[1] != y:
             self.raw_command(f"APS2/{self.__speed}/{y}/1")
             sleep(self.INTERVAL_TIME)
-        if last_pos[2] != x:
+        if last_pos[2] != z:
             self.raw_command(f"APS3/{self.__speed}/{z}/1")
+            sleep(self.INTERVAL_TIME)
+        if last_pos[3] != u:
+            self.raw_command(f"APS4/{self.__speed}/{u}/1")
             sleep(self.INTERVAL_TIME)
 
     @property
-    def position(self) -> Tuple[float, float, float]:
+    def position(self) -> Tuple[float, float, float, float]:
+        """各軸の角度と連動。インデックス単位での書き込みは出来ない。
+
+        Example:
+            >>> Aries.position
+            (0.0, 0.0, 0.0, 0.0)
+            >>> Aries.position[3] = 90
+            <NG (TypeError)>
+            >>> Aries.position = [0,0,0,90]
+            <OK>
+        """
         position = self.position_by_pulse
         x = position[0] / self.PULSE_PER_DEGREE_X
         y = position[1] / self.PULSE_PER_DEGREE_Y
         z = position[2] / self.PULSE_PER_DEGREE_Z
-        return (x, y, z)
+        u = position[3] / self.PULSE_PER_DEGREE_U
+        return (x, y, z, u)
 
     @position.setter
     def position(self, position: Sequence[float]) -> None:
@@ -194,6 +221,7 @@ class Aries:
             int(position[0] * self.PULSE_PER_DEGREE_X),
             int(position[1] * self.PULSE_PER_DEGREE_Y),
             int(position[2] * self.PULSE_PER_DEGREE_Z),
+            int(position[3] * self.PULSE_PER_DEGREE_U),
         )
         self.position_by_pulse = position
 
