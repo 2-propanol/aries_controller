@@ -127,6 +127,7 @@ class Aries:
         self.raw_command(f"ORG1/{self.__speed}/1")
         self.raw_command(f"ORG2/{self.__speed}/1")
         self.raw_command(f"ORG3/{self.__speed}/1")
+        self.raw_command(f"ORG4/{self.__speed}/1")
 
     def sleep_until_stop(self) -> None:
         """ステージが停止状態になるまでsleepする。"""
@@ -143,6 +144,7 @@ class Aries:
         self.raw_command(f"STP1/{int(immediate)}")
         self.raw_command(f"STP2/{int(immediate)}")
         self.raw_command(f"STP3/{int(immediate)}")
+        self.raw_command(f"STP4/{int(immediate)}")
 
     def unlock_emergency_stop(self) -> None:
         """非常停止信号のソフトウェアロックを解除する"""
@@ -155,6 +157,7 @@ class Aries:
             self.raw_command("STR1").split()[2] == "0"
             and self.raw_command("STR2").split()[2] == "0"
             and self.raw_command("STR3").split()[2] == "0"
+            and self.raw_cammand("STR4").split()[2] == "0"
         )
 
     @property
