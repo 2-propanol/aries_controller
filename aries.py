@@ -63,12 +63,13 @@ class Aries:
             raise ConnectionError(f"(ARIES) error: {err}")
 
     def __del__(self) -> None:
-        """telnetから切断。
+        """各軸の駆動を停止し、telnetから切断。
 
-        telnetプロセスがpython終了後も残るのを防ぐため。
-        `del aries`のように明示的に呼び出す必要はない。
+        `KeyboardInterrupt`などを非常停止として機能させることが出来る。
         """
         try:
+            if not self.is_stopped:
+                self.stop_all_stages(immediate=True)
             self.tn.close()
         except AttributeError:
             # そもそもtelnetに接続されなかったときの例外
@@ -136,7 +137,7 @@ class Aries:
         return
 
     def stop_all_stages(self, immediate: bool = False) -> None:
-        """3軸全てを停止させる
+        """4軸全てを停止させる
 
         Args:
             immediate: Falseで減速停止、Trueで緊急停止
