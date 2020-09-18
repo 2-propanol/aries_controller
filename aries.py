@@ -157,7 +157,7 @@ class Aries:
             self.raw_command("STR1").split()[2] == "0"
             and self.raw_command("STR2").split()[2] == "0"
             and self.raw_command("STR3").split()[2] == "0"
-            and self.raw_cammand("STR4").split()[2] == "0"
+            and self.raw_command("STR4").split()[2] == "0"
         )
 
     @property
