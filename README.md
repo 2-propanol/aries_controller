@@ -1,4 +1,4 @@
-# ARIES / LYNX モーターコントローラのpython制御
+# Python製 ARIES / LYNX モーターコントローラ ラッパー
 [神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御します。<br />
 > An unofficial telnet wrapper for ["ARIES / LYNX" motor controller](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/) by [Kohzu Precision Co.,Ltd.](https://www.kohzu.co.jp/i/)
 
@@ -19,13 +19,13 @@ pip install git+https://github.com/2-propanol/aries_python
 pip install -U aries_python
 ```
 
-### `aries`(as command line tool)
+### `aries`(as a command line tool)
 ```sh
 aries --host <HOST> --port <PORT> <operation>
 ```
 > The defaults of `HOST` and `PORT` are `192.168.1.20` and `12321`.
 
-### `import`(as Python module)
+### `import`(as a Python module)
 ```python
 >>> from aries import Aries
 >>> stage = Aries()
