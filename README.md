@@ -52,3 +52,7 @@ aries --host <HOST> --port <PORT> <operation>
 ```sh
 pip uninstall aries_python
 ```
+
+## Coordinate system
+![pan&roll](.docs/pan&roll_axis.svg)
+![light](.docs/light_axis.svg)
