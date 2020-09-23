@@ -3,7 +3,7 @@
 > An unofficial telnet wrapper for ["ARIES / LYNX" motor controller](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/) by [Kohzu Precision Co.,Ltd.](https://www.kohzu.co.jp/i/)
 
 研究室の4軸ステージの制御用に作成。<br />
-> This repository is intended to work with the equipment I use in my lab. This means that equipment set up for other purposes (with a different number and range of axes to operate on) will NOT work as is.
+> This repository is intended to work with the equipment I use in my lab. This means that equipment set up for other purposes (with a different number and range of axes to operate on) will not work as is.
 
 ## Usage
 環境次第で`pip`を`pip3`や`pipenv`、`pip install`を`poetry add`などに読み替えてください。<br />
@@ -55,4 +55,5 @@ pip uninstall aries_python
 
 ## Coordinate system
 ![pan&roll](.docs/pan&roll_axis.svg)
+![tilt](.docs/tilt_axis.svg)
 ![light](.docs/light_axis.svg)
