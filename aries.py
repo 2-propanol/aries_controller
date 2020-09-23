@@ -20,7 +20,7 @@ from typing import Sequence, Tuple
 
 
 class Aries:
-    """ARIES 3軸ステージを制御するクラス
+    """ARIES 4軸ステージを制御するクラス
 
     1軸(パン): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
     2軸(チルト): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
@@ -28,10 +28,11 @@ class Aries:
     4軸(光源): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
 
     Attributes:
-        is_stopped (bool): 3軸全てが停止していればTrue。Read-Only。
-        speed (int): 3軸全てのステージの移動速度。1〜9。
+        is_stopped (bool): 4軸全てが停止していればTrue。Read-Only。
+        speed (int): 4軸全てのステージの移動速度。1〜9。
         position (Sequence[float]): 各軸の角度と連動。
         position_by_pulse (Sequence[int]): 各軸のパルス値と連動。
+        safety_u_axis (bool): U軸(光源軸)を-90度〜90度までに制限する。デフォルトはTrue。
     """
 
     __speed: int = 4
@@ -40,10 +41,17 @@ class Aries:
     INTERVAL_TIME: float = 0.1
 
     # 各軸の分解能
-    PULSE_PER_DEGREE_X: int = 500
-    PULSE_PER_DEGREE_Y: int = 1000
-    PULSE_PER_DEGREE_Z: int = 500
-    PULSE_PER_DEGREE_U: int = 500
+    __PULSE_PER_DEGREE_X: int = 500
+    __PULSE_PER_DEGREE_Y: int = 1000
+    __PULSE_PER_DEGREE_Z: int = 500
+    __PULSE_PER_DEGREE_U: int = 500
+
+    # U軸(光源軸)の範囲
+    __min_u_axis_pulse: int = -45000
+    __max_u_axis_pulse: int = 45000
+
+    # デストラクト時に非常停止を発行する
+    safety_stop: bool = True
 
     def __init__(
         self, host: str = "192.168.1.20", port: int = 12321, timeout: int = 10
@@ -63,12 +71,13 @@ class Aries:
             raise ConnectionError(f"(ARIES) error: {err}")
 
     def __del__(self) -> None:
-        """telnetから切断。
+        """各軸の駆動を停止し、telnetから切断。
 
-        telnetプロセスがpython終了後も残るのを防ぐため。
-        `del aries`のように明示的に呼び出す必要はない。
+        `KeyboardInterrupt`などを非常停止として機能させることが出来る。
         """
         try:
+            if self.safety_stop and not self.is_stopped:
+                self.stop_all_stages(immediate=True)
             self.tn.close()
         except AttributeError:
             # そもそもtelnetに接続されなかったときの例外
@@ -99,6 +108,31 @@ class Aries:
                 return min_val
             else:
                 return src
+
+    @property
+    def safety_u_axis(self) -> bool:
+        if self.__min_u_axis_pulse == -45000 and self.__max_u_axis_pulse == 45000:
+            return True
+        elif (
+            self.__min_u_axis_pulse == -134217728
+            and self.__max_u_axis_pulse == 134217728
+        ):
+            return False
+        else:
+            raise RuntimeError(
+                "'__min_u_axis_pulse' and '__max_u_axis_pulse' has an invalid value.\n"
+                f"'__min_u_axis_pulse' has {self.__min_u_axis_pulse}, "
+                f"'__max_u_axis_pulse' has {self.__max_u_axis_pulse}."
+            )
+
+    @safety_u_axis.setter
+    def safety_u_axis(self, is_on: bool) -> None:
+        if is_on:
+            self.__min_u_axis_pulse = -45000
+            self.__max_u_axis_pulse = 45000
+        else:
+            self.__min_u_axis_pulse = -134217728
+            self.__max_u_axis_pulse = 134217728
 
     def raw_command(self, cmd: str, timeout: int = 300) -> str:
         """'RPS1/4/90000/1'のようなtelnet用コマンドを送信する。
@@ -136,7 +170,7 @@ class Aries:
         return
 
     def stop_all_stages(self, immediate: bool = False) -> None:
-        """3軸全てを停止させる
+        """4軸全てを停止させる
 
         Args:
             immediate: Falseで減速停止、Trueで緊急停止
@@ -152,7 +186,7 @@ class Aries:
 
     @property
     def is_stopped(self) -> bool:
-        """3軸全てが停止状態であれば`True`"""
+        """4軸全てが停止状態であれば`True`"""
         return (
             self.raw_command("STR1").split()[2] == "0"
             and self.raw_command("STR2").split()[2] == "0"
@@ -183,7 +217,7 @@ class Aries:
         x = self._clip(position[0], -45000, 45000)
         y = self._clip(position[1], 0, 90000)
         z = self._clip(position[2], -134217728, 134217727)
-        u = self._clip(position[3], -134217728, 134217727)
+        u = self._clip(position[3], self.__min_u_axis_pulse, self.__max_u_axis_pulse)
 
         last_pos = self.position_by_pulse
         if last_pos[0] != x:
@@ -212,25 +246,25 @@ class Aries:
             <OK>
         """
         position = self.position_by_pulse
-        x = position[0] / self.PULSE_PER_DEGREE_X
-        y = position[1] / self.PULSE_PER_DEGREE_Y
-        z = position[2] / self.PULSE_PER_DEGREE_Z
-        u = position[3] / self.PULSE_PER_DEGREE_U
+        x = position[0] / self.__PULSE_PER_DEGREE_X
+        y = position[1] / self.__PULSE_PER_DEGREE_Y
+        z = position[2] / self.__PULSE_PER_DEGREE_Z
+        u = position[3] / self.__PULSE_PER_DEGREE_U
         return (x, y, z, u)
 
     @position.setter
     def position(self, position: Sequence[float]) -> None:
         position = (
-            int(position[0] * self.PULSE_PER_DEGREE_X),
-            int(position[1] * self.PULSE_PER_DEGREE_Y),
-            int(position[2] * self.PULSE_PER_DEGREE_Z),
-            int(position[3] * self.PULSE_PER_DEGREE_U),
+            int(position[0] * self.__PULSE_PER_DEGREE_X),
+            int(position[1] * self.__PULSE_PER_DEGREE_Y),
+            int(position[2] * self.__PULSE_PER_DEGREE_Z),
+            int(position[3] * self.__PULSE_PER_DEGREE_U),
         )
         self.position_by_pulse = position
 
     @property
     def speed(self) -> int:
-        """3軸全てのステージの移動速度。1〜9。"""
+        """4軸全てのステージの移動速度。1〜9。"""
         return self.__speed
 
     @speed.setter
