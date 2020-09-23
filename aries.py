@@ -41,14 +41,17 @@ class Aries:
     INTERVAL_TIME: float = 0.1
 
     # 各軸の分解能
-    PULSE_PER_DEGREE_X: int = 500
-    PULSE_PER_DEGREE_Y: int = 1000
-    PULSE_PER_DEGREE_Z: int = 500
-    PULSE_PER_DEGREE_U: int = 500
+    __PULSE_PER_DEGREE_X: int = 500
+    __PULSE_PER_DEGREE_Y: int = 1000
+    __PULSE_PER_DEGREE_Z: int = 500
+    __PULSE_PER_DEGREE_U: int = 500
 
     # U軸(光源軸)の範囲
     __min_u_axis_pulse: int = -45000
     __max_u_axis_pulse: int = 45000
+
+    # デストラクト時に非常停止を発行する
+    safety_stop: bool = True
 
     def __init__(
         self, host: str = "192.168.1.20", port: int = 12321, timeout: int = 10
@@ -73,7 +76,7 @@ class Aries:
         `KeyboardInterrupt`などを非常停止として機能させることが出来る。
         """
         try:
-            if not self.is_stopped:
+            if self.safety_stop and not self.is_stopped:
                 self.stop_all_stages(immediate=True)
             self.tn.close()
         except AttributeError:
@@ -243,19 +246,19 @@ class Aries:
             <OK>
         """
         position = self.position_by_pulse
-        x = position[0] / self.PULSE_PER_DEGREE_X
-        y = position[1] / self.PULSE_PER_DEGREE_Y
-        z = position[2] / self.PULSE_PER_DEGREE_Z
-        u = position[3] / self.PULSE_PER_DEGREE_U
+        x = position[0] / self.__PULSE_PER_DEGREE_X
+        y = position[1] / self.__PULSE_PER_DEGREE_Y
+        z = position[2] / self.__PULSE_PER_DEGREE_Z
+        u = position[3] / self.__PULSE_PER_DEGREE_U
         return (x, y, z, u)
 
     @position.setter
     def position(self, position: Sequence[float]) -> None:
         position = (
-            int(position[0] * self.PULSE_PER_DEGREE_X),
-            int(position[1] * self.PULSE_PER_DEGREE_Y),
-            int(position[2] * self.PULSE_PER_DEGREE_Z),
-            int(position[3] * self.PULSE_PER_DEGREE_U),
+            int(position[0] * self.__PULSE_PER_DEGREE_X),
+            int(position[1] * self.__PULSE_PER_DEGREE_Y),
+            int(position[2] * self.__PULSE_PER_DEGREE_Z),
+            int(position[3] * self.__PULSE_PER_DEGREE_U),
         )
         self.position_by_pulse = position
 
