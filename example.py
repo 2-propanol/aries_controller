@@ -10,7 +10,7 @@ def main():
     for i in range(3):
         try:
             print("Trying 192.168.1.20:12321.")
-            aries = Aries()
+            stage = Aries()
         except ConnectionError as err:
             # 接続失敗時は`ConnetionError`を投げる
             print(err)
@@ -23,11 +23,12 @@ def main():
         print("connection failed.")
         return 1
 
-    aries.speed = 5  # 5速で駆動する
+    stage.speed = 5  # 5速で駆動する
 
-    print("reseting stage position")
-    aries.reset()  # 初期位置に戻す
-    aries.sleep_until_stop()  # 停止するまで待機する
+    stage.position = (0, 90, 0, 20)
+    stage.sleep_until_stop()  # 停止するまで待機する
+
+    x, y, _, _ = stage.position
 
     def direction(int_val):
         if int_val % 2 == 0:
@@ -37,27 +38,20 @@ def main():
 
     # パルス値による指定
     for i in range(4):
-        aries.x = 45000 * direction(i)
-        aries.sleep_until_stop()
+        x = 90 * direction(i)
+        stage.position = (x, y, 0, 20)
+        stage.sleep_until_stop()
         for j in range(10):
-            print(f"shot {aries.x},{aries.y}")
-            aries.x += -10000 * direction(i)
-            aries.sleep_until_stop()
-        aries.y += 30000
+            print(f"shot {x},{y}")
+            x += -20 * direction(i)
+            stage.position = (x, y, 0, 20)
+            stage.sleep_until_stop()
+        y -= 30
+        stage.position = (x, y, 0, 20)
 
     print("reseting stage position")
-    aries.reset()
-    aries.sleep_until_stop()
-
-    # 角度による指定
-    '''
-    for i in range(4):
-        for j in range(10):
-            print(f"shot {aries.z_by_degree},{aries.y_by_degree}")
-            aries.z_by_degree += 60.0
-            aries.sleep_until_stop()
-        aries.y_by_degree += 30.0
-    '''
+    stage.reset()
+    stage.sleep_until_stop()
 
     return 0
 
