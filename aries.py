@@ -35,7 +35,7 @@ class Aries:
         safety_u_axis (bool): U軸(光源軸)を-90度〜90度までに制限する。デフォルトはTrue。
     """
 
-    __speed: int = 4
+    __speed: Tuple[int, int, int, int] = (5, 5, 7, 4)
 
     # 駆動要求を発行した後の待機時間
     INTERVAL_TIME: float = 0.1
@@ -158,10 +158,10 @@ class Aries:
         電源投入直後や長時間駆動させた後に実行することで、
         ステージ位置の信頼性を向上できる。
         """
-        self.raw_command(f"ORG1/{self.__speed}/1")
-        self.raw_command(f"ORG2/{self.__speed}/1")
-        self.raw_command(f"ORG3/{self.__speed}/1")
-        self.raw_command(f"ORG4/{self.__speed}/1")
+        self.raw_command(f"ORG1/{self.__speed[0]}/1")
+        self.raw_command(f"ORG2/{self.__speed[1]}/1")
+        self.raw_command(f"ORG3/{self.__speed[2]}/1")
+        self.raw_command(f"ORG4/{self.__speed[3]}/1")
 
     def sleep_until_stop(self) -> None:
         """ステージが停止状態になるまでsleepする。"""
@@ -221,16 +221,16 @@ class Aries:
 
         last_pos = self.position_by_pulse
         if last_pos[0] != x:
-            self.raw_command(f"APS1/{self.__speed}/{x}/1")
+            self.raw_command(f"APS1/{self.__speed[0]}/{x}/1")
             sleep(self.INTERVAL_TIME)
         if last_pos[1] != y:
-            self.raw_command(f"APS2/{self.__speed}/{y}/1")
+            self.raw_command(f"APS2/{self.__speed[1]}/{y}/1")
             sleep(self.INTERVAL_TIME)
         if last_pos[2] != z:
-            self.raw_command(f"APS3/{self.__speed}/{z}/1")
+            self.raw_command(f"APS3/{self.__speed[2]}/{z}/1")
             sleep(self.INTERVAL_TIME)
         if last_pos[3] != u:
-            self.raw_command(f"APS4/{self.__speed}/{u}/1")
+            self.raw_command(f"APS4/{self.__speed[3]}/{u}/1")
             sleep(self.INTERVAL_TIME)
 
     @property
@@ -263,13 +263,16 @@ class Aries:
         self.position_by_pulse = position
 
     @property
-    def speed(self) -> int:
-        """4軸全てのステージの移動速度。1〜9。"""
+    def speed(self) -> Tuple[int]:
+        """4軸全てのステージの移動速度。0〜9。"""
         return self.__speed
 
     @speed.setter
-    def speed(self, speed: int) -> None:
-        self.__speed = self._clip(speed, 0, 9)
+    def speed(self, speed: Sequence[int]) -> None:
+        self.__speed[0] = self._clip(speed[0], 0, 9)
+        self.__speed[1] = self._clip(speed[1], 0, 9)
+        self.__speed[2] = self._clip(speed[2], 0, 9)
+        self.__speed[3] = self._clip(speed[3], 0, 9)
 
 
 def main() -> int:
