@@ -6,7 +6,7 @@ with open("README.md", encoding="utf-8") as fh:
 setuptools.setup(
     name="aries_python",
     python_requires=">=3.6",
-    version="0.4.0",
+    version="0.4.1",
     description='An unofficial telnet wrapper for "ARIES / LYNX" motor controller by Kohzu Precision Co.,Ltd.',
     long_description=long_description,
     long_description_content_type="text/markdown",

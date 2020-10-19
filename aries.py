@@ -32,10 +32,10 @@ class Aries:
         speed (int): 4軸全てのステージの移動速度。1〜9。
         position (Sequence[float]): 各軸の角度と連動。
         position_by_pulse (Sequence[int]): 各軸のパルス値と連動。
-        safety_u_axis (bool): U軸(光源軸)を-90度〜90度までに制限する。デフォルトはTrue。
+        safety_u_axis (bool): U軸(光源軸)の無限回転を防止する。デフォルトはTrue。
     """
 
-    __speed: Tuple[int, int, int, int] = (5, 5, 7, 4)
+    __speed: Tuple[int, int, int, int] = [5, 5, 7, 4]
 
     # 駆動要求を発行した後の待機時間
     INTERVAL_TIME: float = 0.1
@@ -111,7 +111,7 @@ class Aries:
 
     @property
     def safety_u_axis(self) -> bool:
-        if self.__min_u_axis_pulse == -45000 and self.__max_u_axis_pulse == 45000:
+        if self.__min_u_axis_pulse == -89999 and self.__max_u_axis_pulse == 90000:
             return True
         elif (
             self.__min_u_axis_pulse == -134217728
@@ -265,7 +265,7 @@ class Aries:
     @property
     def speed(self) -> Tuple[int]:
         """4軸全てのステージの移動速度。0〜9。"""
-        return self.__speed
+        return tuple(self.__speed)
 
     @speed.setter
     def speed(self, speed: Sequence[int]) -> None:
