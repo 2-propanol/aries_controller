@@ -1,22 +1,21 @@
 # Python製 ARIES / LYNX モーターコントローラ ラッパー
-[神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御します。<br />
-> An unofficial telnet wrapper for ["ARIES / LYNX" motor controller](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/) by [Kohzu Precision Co.,Ltd.](https://www.kohzu.co.jp/i/)
+[神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御するためのソフトウェア。
+研究室の4軸ステージの制御用に作成したものです。
 
-研究室の4軸ステージの制御用に作成。<br />
-> This repository is intended to work with the equipment I use in my lab. This means that equipment set up for other purposes (with a different number and range of axes to operate on) will not work as is.
+> An unofficial telnet wrapper for ["ARIES / LYNX" motor controller](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/) by [Kohzu Precision Co.,Ltd.](https://www.kohzu.co.jp/i/)
+> This repository is intended to work with the equipment I use in my lab. It may not work as is on equipment set up for other purposes (with different numbers and ranges of axes to operate).
 
 ## Usage
-環境次第で`pip`を`pip3`や`pipenv`、`pip install`を`poetry add`などに読み替えてください。<br />
-> Depending on your environment, `pip install` should be `pip3 install`, `pipenv install`, `poetry add`, `pyflow install` etc.
+環境次第で`pip`を`pip3`や`pipenv`、`pip install`を`poetry add`や`pyflow install`などに読み替えてください。
 
 ### Install
 ```sh
-pip install git+https://github.com/2-propanol/aries_python
+pip install aries-controller
 ```
 
 ### Update
 ```sh
-pip install -U aries_python
+pip install -U aries-controller
 ```
 
 ### `aries`(as a command line tool)
@@ -50,7 +49,7 @@ aries --host <HOST> --port <PORT> <operation>
 
 ### Uninstall
 ```sh
-pip uninstall aries_python
+pip uninstall aries-controller
 ```
 
 ## Coordinate system
