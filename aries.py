@@ -32,7 +32,8 @@ class Aries:
         speed (int): 4軸全てのステージの移動速度。1〜9。
         position (Sequence[float]): 各軸の角度と連動。
         position_by_pulse (Sequence[int]): 各軸のパルス値と連動。
-        safety_u_axis (bool): U軸(光源軸)の無限回転を防止する。デフォルトはTrue。
+        ignore_safety_stop (bool): デストラクト時に非常停止信号を発行しない。デフォルトはFalse。
+        allow_u_axis_shortest_move (bool): U軸(光源軸)の無限回転を許可する。デフォルトはFalse。
     """
 
     __speed: Tuple[int, int, int, int] = [5, 5, 7, 4]
@@ -47,11 +48,11 @@ class Aries:
     __PULSE_PER_DEGREE_U: int = 500
 
     # U軸(光源軸)の範囲
-    __min_u_axis_pulse: int = -45000
-    __max_u_axis_pulse: int = 45000
+    __min_u_axis_pulse: int = -90000
+    __max_u_axis_pulse: int = 90000
 
-    # デストラクト時に非常停止を発行する
-    safety_stop: bool = True
+    # デストラクト時に非常停止を発行しない
+    ignore_safety_stop: bool = False
 
     def __init__(
         self, host: str = "192.168.1.20", port: int = 12321, timeout: int = 10
@@ -76,7 +77,7 @@ class Aries:
         `KeyboardInterrupt`などを非常停止として機能させることが出来る。
         """
         try:
-            if self.safety_stop and not self.is_stopped:
+            if self.ignore_safety_stop and not self.is_stopped:
                 self.stop_all_stages(immediate=True)
             self.tn.close()
         except AttributeError:
@@ -110,14 +111,14 @@ class Aries:
                 return src
 
     @property
-    def safety_u_axis(self) -> bool:
-        if self.__min_u_axis_pulse == -89999 and self.__max_u_axis_pulse == 90000:
-            return True
+    def allow_u_axis_shortest_move(self) -> bool:
+        if self.__min_u_axis_pulse == -90000 and self.__max_u_axis_pulse == 90000:
+            return False
         elif (
             self.__min_u_axis_pulse == -134217728
             and self.__max_u_axis_pulse == 134217728
         ):
-            return False
+            return True
         else:
             raise RuntimeError(
                 "'__min_u_axis_pulse' and '__max_u_axis_pulse' has an invalid value.\n"
@@ -125,14 +126,14 @@ class Aries:
                 f"'__max_u_axis_pulse' has {self.__max_u_axis_pulse}."
             )
 
-    @safety_u_axis.setter
-    def safety_u_axis(self, is_on: bool) -> None:
+    @allow_u_axis_shortest_move.setter
+    def allow_u_axis_shortest_move(self, is_on: bool) -> None:
         if is_on:
-            self.__min_u_axis_pulse = -45000
-            self.__max_u_axis_pulse = 45000
-        else:
             self.__min_u_axis_pulse = -134217728
             self.__max_u_axis_pulse = 134217728
+        else:
+            self.__min_u_axis_pulse = -90000
+            self.__max_u_axis_pulse = 90000
 
     def raw_command(self, cmd: str, timeout: int = 300) -> str:
         """'RPS1/4/90000/1'のようなtelnet用コマンドを送信する。
