@@ -24,8 +24,8 @@ class Aries:
 
     1軸(パン): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
     2軸(チルト): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
-    3軸(ロール): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
-    4軸(光源): 360度無限回転(分解能 0.002度)、パルス値 -360,000 〜 +360,000(180,000で一周)。
+    3軸(ロール): 360度無限回転(分解能 0.002度)、パルス値 0 〜 +180,000(180,000で一周)。
+    4軸(光源): 360度無限回転(分解能 0.002度)、パルス値 -90,000 〜 +90,000(180,000で一周)。
 
     Attributes:
         is_stopped (bool): 4軸全てが停止していればTrue。Read-Only。
@@ -228,7 +228,11 @@ class Aries:
             self.raw_command(f"APS2/{self.__speed[1]}/{y}/1")
             sleep(self.INTERVAL_TIME)
         if last_pos[2] != z:
-            self.raw_command(f"APS3/{self.__speed[2]}/{z}/1")
+            # 最短距離移動（例:20度から340度へ移動する場合、-40度移動を発行する）
+            current_z = int(self.raw_command("RDP3").split()[2])
+            distance = z - current_z
+            distance = (distance + 90000) % 180000 - 90000
+            self.raw_command(f"RPS3/{self.__speed[2]}/{distance}/1")
             sleep(self.INTERVAL_TIME)
         if last_pos[3] != u:
             self.raw_command(f"APS4/{self.__speed[3]}/{u}/1")
@@ -249,7 +253,7 @@ class Aries:
         position = self.position_by_pulse
         x = position[0] / self.__PULSE_PER_DEGREE_X
         y = position[1] / self.__PULSE_PER_DEGREE_Y
-        z = position[2] / self.__PULSE_PER_DEGREE_Z
+        z = (position[2] / self.__PULSE_PER_DEGREE_Z) % 180000
         u = position[3] / self.__PULSE_PER_DEGREE_U
         return (x, y, z, u)
 
