@@ -253,7 +253,7 @@ class Aries:
         position = self.position_by_pulse
         x = position[0] / self.__PULSE_PER_DEGREE_X
         y = position[1] / self.__PULSE_PER_DEGREE_Y
-        z = (position[2] / self.__PULSE_PER_DEGREE_Z) % 180000
+        z = (position[2] / self.__PULSE_PER_DEGREE_Z) % 360
         u = position[3] / self.__PULSE_PER_DEGREE_U
         return (x, y, z, u)
 
