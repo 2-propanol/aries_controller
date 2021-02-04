@@ -1,4 +1,8 @@
 # Python製 ARIES / LYNX モーターコントローラ ラッパー
+[![PyPI version](https://img.shields.io/pypi/v/aries_controller?style=flat-square)](https://pypi.org/project/aries_controller/#history)
+[![GitHub version](https://img.shields.io/github/v/tag/2-propanol/aries_controller?style=flat-square)](https://github.com/2-propanol/aries_controller/releases)
+[![Python Versions](https://img.shields.io/pypi/pyversions/aries_controller?style=flat-square)](https://pypi.org/project/aries_controller/)
+
 [神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御するためのソフトウェア。
 研究室の4軸ステージの制御用に作成したものです。
 
