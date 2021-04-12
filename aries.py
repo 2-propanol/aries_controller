@@ -302,7 +302,6 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, help="transfering command to ARIES")
     parser.add_argument(
         "--host",
         type=str,
@@ -311,6 +310,31 @@ def main() -> int:
     )
     parser.add_argument(
         "--port", type=int, default=12321, help="ARIES's port. default is 12321"
+    )
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "-r", "--raw_command", type=str, help="transfering command to ARIES"
+    )
+
+    def str_to_4floats(value: str):
+        positions = value.split("/")
+        if len(positions) != 4:
+            raise argparse.ArgumentError(f"invalid position: {positions}")
+        try:
+            x = float(positions[0])
+            y = float(positions[1])
+            z = float(positions[2])
+            u = float(positions[3])
+        except ValueError:
+            raise argparse.ArgumentError(f"invalid position: {positions}")
+        return x, y, z, u
+
+    group.add_argument(
+        "-s",
+        "--set_position",
+        type=str_to_4floats,
+        help="move axises, separate with /. ex. \" -45/90/0/10\"",
     )
     args = parser.parse_args()
 
@@ -327,8 +351,23 @@ def main() -> int:
         print(f"connected to {args.host}:{args.port}.")
 
     # コマンドの実行と結果の表示
-    result = aries.raw_command(args.command)
-    print(result)
+    if args.raw_command:
+        result = aries.raw_command(args.raw_command)
+        print(result)
+
+    elif args.set_position:
+        x, y, z, u = args.set_position
+        print(f"moving axis to ({x}, {y}, {z}, {u})")
+        aries.position = (x, y, z, u)
+
+    else:
+        print()
+        print("Command was empty. Printing present position.")
+        result = aries.position
+        print("position:", result)
+        result = aries.position_by_pulse
+        print("position_by_pulse:", result)
+        print()
 
     # 明示的な切断要求(デストラクタがあるので書かなくても良い)
     del aries

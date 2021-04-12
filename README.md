@@ -3,7 +3,7 @@
 [![GitHub version](https://img.shields.io/github/v/tag/2-propanol/aries_controller?style=flat-square)](https://github.com/2-propanol/aries_controller/releases)
 [![Python Versions](https://img.shields.io/pypi/pyversions/aries_controller?style=flat-square)](https://pypi.org/project/aries_controller/)
 
-[神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御するためのソフトウェア。
+[神津精機株式会社](https://www.kohzu.co.jp/i/)さんの[ARIES / LYNX ドライバ分離型多軸モーターコントローラ](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/)をPythonで制御するためのラッパーです。
 研究室の4軸ステージの制御用に作成したものです。
 
 > An unofficial telnet wrapper for ["ARIES / LYNX" motor controller](https://www.kohzu.co.jp/products/control-electronics/motor-controller-kosmos/aries-lynx/) by [Kohzu Precision Co.,Ltd.](https://www.kohzu.co.jp/i/)
@@ -24,7 +24,17 @@ pip install -U aries-controller
 
 ### `aries`(as a command line tool)
 ```sh
-aries --host <HOST> --port <PORT> <operation>
+# aries --host <HOST> --port <PORT> <operation>
+
+# transfer raw_command(reset Z axis)
+aries --raw_command ORG3/7/0
+
+# getting axis position
+aries
+
+# moving axis
+aries --set_position 45/90/0/-10
+aries --set_position " -45/60/180/10"
 ```
 > The defaults of `HOST` and `PORT` are `192.168.1.20` and `12321`.
 
