@@ -23,7 +23,7 @@ def main():
         print("connection failed.")
         return 1
 
-    stage.speed = 5  # 5速で駆動する
+    stage.speed = (5, 5, 5, 5)  # 5速で駆動する
 
     stage.position = (0, 90, 0, 20)
     stage.sleep_until_stop()  # 停止するまで待機する
@@ -41,7 +41,7 @@ def main():
         x = 90 * direction(i)
         stage.position = (x, y, 0, 20)
         stage.sleep_until_stop()
-        for j in range(10):
+        for _ in range(10):
             print(f"shot {x},{y}")
             x += -20 * direction(i)
             stage.position = (x, y, 0, 20)
@@ -56,5 +56,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

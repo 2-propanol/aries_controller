@@ -16,27 +16,27 @@ from socket import timeout as socket_timeout
 from sys import stderr
 from telnetlib import Telnet
 from time import sleep
-from typing import Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 
 class Aries:
     """ARIES 4軸ステージを制御するクラス
 
-    1軸(パン): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
-    2軸(チルト): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
-    3軸(ロール): 360度無限回転(分解能 0.002度)、パルス値 0 〜 +180,000(180,000で一周)。
-    4軸(光源): 360度無限回転(分解能 0.002度)、パルス値 -90,000 〜 +90,000(180,000で一周)。
+    X軸(パン): -90度 〜 +90度(分解能 0.002度)、パルス値 -45,000 〜 +45,000。
+    Y軸(チルト): 0度 〜 90度(分解能 0.001度)、パルス値 0 〜 +90,000。
+    Z軸(ロール): 360度無限回転(分解能 0.002度)、パルス値 0 〜 +180,000(180,000で一周)。
+    U軸(光源): 360度無限回転(分解能 0.002度)、パルス値 -90,000 〜 +90,000(180,000で一周)。
 
     Attributes:
         is_stopped (bool): 4軸全てが停止していればTrue。Read-Only。
-        speed (int): 4軸全てのステージの移動速度。1〜9。
+        speed (list[int]): 各軸のステージの移動速度。0〜9。
         position (Sequence[float]): 各軸の角度と連動。
         position_by_pulse (Sequence[int]): 各軸のパルス値と連動。
         ignore_safety_stop (bool): デストラクト時に非常停止信号を発行しない。デフォルトはFalse。
         allow_u_axis_shortest_move (bool): U軸(光源軸)の無限回転を許可する。デフォルトはFalse。
     """
 
-    __speed: Tuple[int, int, int, int] = [5, 5, 7, 4]
+    __speed: List[int] = [5, 5, 7, 4]
 
     # 駆動要求を発行した後の待機時間
     INTERVAL_TIME: float = 0.1
@@ -81,7 +81,7 @@ class Aries:
                 self.stop_all_stages(immediate=True)
             self.tn.close()
         except AttributeError:
-            # そもそもtelnetに接続されなかったときの例外
+            # telnetに接続出来なかったときの例外
             pass
 
     @staticmethod
@@ -153,16 +153,28 @@ class Aries:
         # 改行されるまで待機して、得られた内容を返す
         return self.tn.read_until(b"\r\n", timeout).decode()
 
-    def reset(self) -> None:
+    def reset(
+        self, x: bool = True, y: bool = True, z: bool = True, u: bool = True
+    ) -> None:
         """原点近接センサ・エッジを用いてステージを厳密に原点へ復帰させる。
 
         電源投入直後や長時間駆動させた後に実行することで、
         ステージ位置の信頼性を向上できる。
+
+        Args:
+            x: X軸(パン)を原点復帰する。
+            y: Y軸(チルト)を原点復帰する。
+            z: Z軸(ロール)を原点復帰する。
+            u: U軸(光源)を原点復帰する。
         """
-        self.raw_command(f"ORG1/{self.__speed[0]}/1")
-        self.raw_command(f"ORG2/{self.__speed[1]}/1")
-        self.raw_command(f"ORG3/{self.__speed[2]}/1")
-        self.raw_command(f"ORG4/{self.__speed[3]}/1")
+        if x:
+            self.raw_command(f"ORG1/{self.__speed[0]}/1")
+        if y:
+            self.raw_command(f"ORG2/{self.__speed[1]}/1")
+        if z:
+            self.raw_command(f"ORG3/{self.__speed[2]}/1")
+        if u:
+            self.raw_command(f"ORG4/{self.__speed[3]}/1")
 
     def sleep_until_stop(self) -> None:
         """ステージが停止状態になるまでsleepする。"""
@@ -229,7 +241,12 @@ class Aries:
             sleep(self.INTERVAL_TIME)
         if last_pos[2] != z:
             # 最短距離移動（例:20度から340度へ移動する場合、-40度移動を発行する）
-            current_z = int(self.raw_command("RDP3").split()[2])
+            current_z = last_pos[2]
+            if not (-134000000 < current_z < 134000000):
+                # 生の値がオーバーフローする場合はZ軸のみリセットする
+                self.raw_command(f"ORG3/{self.__speed[2]}/0")
+                current_z = int(self.raw_command("RDP3").split()[2])  # 0を期待
+
             distance = z - current_z
             distance = (distance + 90000) % 180000 - 90000
             self.raw_command(f"RPS3/{self.__speed[2]}/{distance}/1")
@@ -269,7 +286,7 @@ class Aries:
 
     @property
     def speed(self) -> Tuple[int]:
-        """4軸全てのステージの移動速度。0〜9。"""
+        """各軸のステージの移動速度。0〜9。"""
         return tuple(self.__speed)
 
     @speed.setter
